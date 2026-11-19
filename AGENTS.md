@@ -7,7 +7,7 @@
 ## เว็บอยู่ที่ไหน
 
 - เว็บจริง: https://ento.kkuclass.com/morphology/
-- Repo: `narinbio-cloud/insect-morphology` (**private** ห้ามเปลี่ยนเป็น public)
+- Repo: `narinbio-cloud/insect-morphology` (**public** เพราะ Hostinger ดึงผ่าน HTTPS: deploy key ของ kkuclass.com ใช้กับ hymenoptera-lab แล้ว และ GitHub ให้ key หนึ่งใช้ได้ repo เดียว ห้ามใส่ข้อมูลลับหรือข้อมูลนักศึกษา)
 - โฮสต์: Hostinger ไฟล์ลงที่ `public_html/ento/morphology` ของเว็บ `kkuclass.com`
 - ลิงก์ตรงแต่ละระดับ: `?level=1`, `?level=2`, `?level=3` (ไม่ใส่ จะเปิดหน้าเลือกระดับก่อน)
 
