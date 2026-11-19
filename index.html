@@ -1,0 +1,2540 @@
+<!doctype html>
+<html lang="th">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Insect Morphology 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap">
+<style>
+/* Layout: a specimen stage (3D) beside a field-notebook panel; on phones the panel stacks under the stage */
+:root{
+  --bg:#eef1ec; --surface:#fbfcfa; --ink:#18221d; --muted:#56655d; --line:#d4dcd5;
+  --accent:#2c6b58; --accent-ink:#ffffff; --accent-soft:#dcebe4;
+  --stage-a:#e9eee8; --stage-b:#cdd7cf; --glass:rgba(251,252,250,.86);
+  --ok:#1f7a4d; --bad:#b3362b;
+  --f-display:"Bai Jamjuree","IBM Plex Sans Thai",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans Thai",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f1411; --surface:#161c18; --ink:#e3ebe5; --muted:#95a59c; --line:#28322c;
+  --accent:#6cc3a6; --accent-ink:#0b1712; --accent-soft:#1d3029;
+  --stage-a:#1d2621; --stage-b:#0c110e; --glass:rgba(22,28,24,.86);
+  --ok:#5fd39a; --bad:#ff8a7a; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0f1411; --surface:#161c18; --ink:#e3ebe5; --muted:#95a59c; --line:#28322c;
+  --accent:#6cc3a6; --accent-ink:#0b1712; --accent-soft:#1d3029;
+  --stage-a:#1d2621; --stage-b:#0c110e; --glass:rgba(22,28,24,.86);
+  --ok:#5fd39a; --bad:#ff8a7a; color-scheme:dark }
+
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6}
+button,input,select{font:inherit;color:inherit}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 384px;height:100%}
+
+/* ---------- stage ---------- */
+.stage{position:relative;min-width:0;overflow:hidden;
+  background:radial-gradient(120% 90% at 50% 35%,var(--stage-a),var(--stage-b))}
+.stage canvas{display:block;width:100%;height:100%;touch-action:none;outline:none}
+.brand{position:absolute;top:16px;left:16px;pointer-events:none;max-width:calc(100% - 32px)}
+.brand .eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.brand h1{font-family:var(--f-display);font-weight:700;font-size:clamp(22px,2.6vw,30px);line-height:1.15;margin:2px 0 0;text-wrap:balance}
+.brand .sp{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.controls{position:absolute;left:16px;right:16px;bottom:16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;
+  padding:8px;border-radius:12px;background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 12px;cursor:pointer;line-height:1.4;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.views{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.views .vlabel{font-size:12px;color:var(--muted);margin-right:2px}
+.btn.sm{padding:4px 9px;font-size:13px}
+.vtag{position:absolute;top:16px;right:16px;pointer-events:none;font-family:var(--f-mono);font-size:12px;color:var(--muted);background:var(--glass);border:1px solid var(--line);border-radius:999px;padding:2px 10px}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.btn:focus-visible,.part:focus-visible,.tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.slider{display:flex;align-items:center;gap:8px;flex:1 1 160px;min-width:140px}
+.slider label{font-size:12px;color:var(--muted);white-space:nowrap}
+.slider input{flex:1;accent-color:var(--accent);min-width:0}
+.check{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer;white-space:nowrap}
+.check input{accent-color:var(--accent)}
+
+.tag3d{position:absolute;left:0;top:0;pointer-events:none;transform:translate(-50%,-100%);transition:opacity .15s}
+.tag3d .box{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:4px 10px;box-shadow:0 4px 16px rgba(0,0,0,.12);white-space:nowrap;text-align:center}
+.tag3d .th{font-weight:600;font-size:14px;line-height:1.3}
+.tag3d .en{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.tag3d .stem{width:1px;height:26px;background:var(--ink);margin:0 auto;opacity:.6}
+.tag3d .dot{width:7px;height:7px;border-radius:50%;background:var(--ink);margin:-3px auto 0}
+.tip{position:absolute;left:0;top:0;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12px;padding:3px 8px;border-radius:6px;white-space:nowrap;transform:translate(12px,12px)}
+
+/* ---------- panel ---------- */
+.panel{border-left:1px solid var(--line);background:var(--surface);overflow-y:auto;min-width:0;
+  padding-block:16px 24px;padding-left:20px;padding-right:20px;display:flex;flex-direction:column;gap:18px}
+.tabs{display:flex;gap:4px;padding:4px;background:var(--bg);border-radius:10px;border:1px solid var(--line)}
+.tab{flex:1;border:0;background:transparent;border-radius:7px;padding:6px 10px;cursor:pointer;color:var(--muted);font-weight:500}
+.tab[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+
+.info h2{font-family:var(--f-display);font-weight:600;font-size:26px;line-height:1.2;margin:6px 0 2px;text-wrap:balance}
+.info .en{font-family:var(--f-mono);font-size:13px;color:var(--muted)}
+.info p{margin:10px 0 0;max-width:62ch}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);letter-spacing:.02em}
+.sw{width:10px;height:10px;border-radius:3px;display:inline-block;flex:none}
+.ref{margin-top:12px;font-size:12px;color:var(--muted);font-family:var(--f-mono)}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;margin:12px 0 0;padding:0;list-style:none;font-size:13px}
+.legend li{display:flex;align-items:center;gap:8px}
+.hint{font-size:13px;color:var(--muted);border-top:1px dashed var(--line);padding-top:10px;margin-top:12px}
+.linkbtn{border:0;background:none;color:var(--accent);padding:0;cursor:pointer;font-size:13px;text-decoration:underline;text-underline-offset:3px;margin-top:10px}
+
+.groups{display:flex;flex-direction:column;gap:14px}
+.group h3{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 6px;display:flex;align-items:center;gap:8px}
+.group .list{display:flex;flex-wrap:wrap;gap:6px}
+.part{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:3px 9px;cursor:pointer;text-align:left;line-height:1.35}
+.part small{display:block;font-family:var(--f-mono);font-size:10.5px;color:var(--muted)}
+.part:hover{border-color:var(--accent)}
+.part:disabled{opacity:.4;cursor:default;border-color:var(--line)}
+.part[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent)}
+
+.antgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:6px}
+.antgrid .part{display:flex;gap:8px;align-items:baseline}
+.antgrid .num{font-family:var(--f-mono);font-size:11px;color:var(--muted);min-width:1.5em;font-variant-numeric:tabular-nums}
+.antinfo{margin-top:14px;padding:12px 14px;border-radius:10px;background:var(--accent-soft)}
+.antinfo h4{font-family:var(--f-display);font-weight:600;font-size:19px;margin:2px 0 0}
+.antinfo h4 .en{font-size:12px;font-weight:400}
+.antinfo p{margin:6px 0 0}
+.antinfo .note{font-size:13px;color:var(--muted)}
+.quizcard{border:1px solid var(--line);border-radius:12px;padding:16px;background:var(--bg)}
+.quizcard .q{font-size:13px;color:var(--muted)}
+.quizcard .target{font-family:var(--f-display);font-weight:600;font-size:28px;line-height:1.2;margin:4px 0 0}
+.quizcard .target-en{font-family:var(--f-mono);font-size:14px;color:var(--muted)}
+.score{display:flex;gap:18px;font-variant-numeric:tabular-nums;margin-top:14px}
+.score div{display:flex;flex-direction:column}
+.score b{font-family:var(--f-display);font-size:24px;line-height:1.1}
+.score span{font-size:12px;color:var(--muted)}
+.feedback{min-height:24px;margin-top:10px;font-weight:500}
+.keytitle{font-family:var(--f-display);font-weight:600;font-size:24px;line-height:1.2;margin:6px 0 2px}
+.keysub{font-size:13px;color:var(--muted);margin:4px 0 0}
+.keypath{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:4px}
+.keypath:empty{display:none}
+.keypath li{font-size:12px;color:var(--muted);padding-left:14px;position:relative;line-height:1.4}
+.keypath li::before{content:"✓";position:absolute;left:0;color:var(--ok)}
+.keypath button{border:0;background:none;padding:0;color:inherit;font:inherit;text-align:left;cursor:pointer;text-decoration:underline dotted}
+.keyq{font-size:13px;color:var(--muted)}
+.keyq b{color:var(--ink);font-size:15px}
+.keyopt{display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:10px;background:var(--surface)}
+.keyopt .go{border:0;background:none;padding:0;text-align:left;cursor:pointer;font:inherit;line-height:1.45;color:var(--ink)}
+.keyopt .go::after{content:" →";color:var(--accent);font-weight:600}
+.keyopt:hover{border-color:var(--accent)}
+.keyopt .show{align-self:flex-start;border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:2px 10px;font-size:12px;cursor:pointer;color:var(--muted)}
+.keyopt .show:hover{border-color:var(--accent);color:var(--ink)}
+.keyres h3{font-family:var(--f-display);font-weight:600;font-size:24px;margin:2px 0 0;line-height:1.2}
+.keyres .lat{font-family:var(--f-mono);font-size:13px;color:var(--muted)}
+.keyres ul{margin:8px 0;padding-left:18px;font-size:14px}
+.keyres p{font-size:14px;margin:8px 0 0}
+.qhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.qclock{font-family:var(--f-mono);font-size:13px;font-variant-numeric:tabular-nums;color:var(--muted)}
+.qclock.low{color:var(--bad);font-weight:600}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.choices:empty{display:none}
+.choice{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px;cursor:pointer;text-align:left;line-height:1.3;font-size:14px}
+.choice small{display:block;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.choice:hover:not(:disabled){border-color:var(--accent)}
+.choice.ok{border-color:var(--ok);color:var(--ok);font-weight:600}
+.choice.bad{border-color:var(--bad);color:var(--bad);text-decoration:line-through}
+.choice:disabled{cursor:default}
+@media (max-width:420px){ .choices{grid-template-columns:1fr} }
+.feedback.ok{color:var(--ok)} .feedback.bad{color:var(--bad)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.field{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+.field select{border:1px solid var(--line);border-radius:8px;padding:5px 8px;background:var(--surface)}
+
+.part[hidden],.group[hidden],.field[hidden],.tab[hidden]{display:none!important}
+/* ---------- levels ---------- */
+.levelbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.lvbtns{display:flex;gap:4px}
+.lvbtn{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 11px;cursor:pointer;font-size:13px;color:var(--muted);white-space:nowrap}
+.lvbtn b{font-family:var(--f-mono);font-weight:500;margin-right:2px}
+.lvbtn:hover{border-color:var(--accent);color:var(--ink)}
+.lvbtn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.lvbtn:focus-visible,.landcard:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.landing{position:fixed;inset:0;z-index:50;overflow-y:auto;background:var(--bg)}
+.landwrap{max-width:980px;margin:0 auto;padding:48px 16px 40px}
+.land-eyebrow{margin:0;font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.landing h1{font-family:var(--f-display);font-weight:700;font-size:clamp(28px,5vw,42px);line-height:1.15;margin:6px 0 10px;text-wrap:balance}
+.land-lede{color:var(--muted);max-width:62ch;margin:0 0 28px}
+.landcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.landcard{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;cursor:pointer;
+  background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;color:inherit}
+.landcard:hover{border-color:var(--accent)}
+.landcard .lvnum{font-family:var(--f-mono);font-size:12px;color:var(--accent);letter-spacing:.04em}
+.landcard h2{font-family:var(--f-display);font-weight:600;font-size:23px;line-height:1.2;margin:0}
+.landcard p{margin:0;color:var(--muted);font-size:14px}
+.landcard ul{margin:4px 0 0;padding-left:18px;font-size:13px}
+.landcard .go{margin-top:auto;padding-top:8px;font-weight:600;color:var(--accent)}
+.landcard .pre{margin-top:auto;padding-top:8px;font-size:13px;color:var(--muted)}
+.landcard[aria-current="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.land-foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+@media (max-width: 860px){
+  .app{grid-template-columns:1fr;grid-template-rows:62svh auto;height:auto;min-height:100%}
+  .panel{border-left:0;border-top:1px solid var(--line);overflow:visible;padding-left:16px;padding-right:16px}
+  .controls{left:10px;right:10px;bottom:10px;gap:6px}
+  .brand{top:12px;left:12px}
+}
+@media (prefers-reduced-motion: reduce){ .tag3d{transition:none} }
+</style>
+
+<div class="app">
+  <section class="stage" id="stage" aria-label="โมเดลสามมิติของตั๊กแตน">
+    <div class="brand">
+      <div class="eyebrow">AG 002 203 · Insect Morphology</div>
+      <h1>สัณฐานวิทยาภายนอกของแมลง</h1>
+      <div class="sp" id="spName">ตั๊กแตน · Orthoptera: Acrididae</div>
+    </div>
+    <div class="tag3d" id="tag3d" hidden><div class="box"><div class="th" id="tagTh"></div><div class="en" id="tagEn"></div></div><div class="stem"></div><div class="dot"></div></div>
+    <div class="tip" id="tip" hidden></div>
+    <div class="vtag" id="vtag" hidden></div>
+    <div class="controls">
+      <button class="btn primary" id="explodeBtn" type="button">แยกชิ้นส่วน</button>
+      <div class="slider"><label for="explode">ระยะแยก</label><input id="explode" type="range" min="0" max="100" value="0"></div>
+      <label class="check"><input type="checkbox" id="fade" checked> จางส่วนอื่น</label>
+      <button class="btn" id="rotateBtn" type="button" aria-pressed="true">หยุดหมุน</button>
+      <button class="btn" id="resetBtn" type="button">มุมมองเริ่มต้น</button>
+      <div class="views" role="group" aria-label="มุมมอง">
+        <span class="vlabel">มุมมอง</span>
+        <button class="btn sm" type="button" data-view="anterior" title="Anterior view">หน้า</button>
+        <button class="btn sm" type="button" data-view="lateral" title="Lateral view">ข้าง</button>
+        <button class="btn sm" type="button" data-view="dorsal" title="Dorsal view">บน</button>
+        <button class="btn sm" type="button" data-view="ventral" title="Ventral view">ล่าง</button>
+        <button class="btn sm" type="button" data-view="posterior" title="Posterior view">ท้าย</button>
+      </div>
+    </div>
+  </section>
+
+  <aside class="panel">
+    <div class="levelbar">
+      <div class="lvbtns" role="group" aria-label="ระดับเนื้อหา">
+        <button class="lvbtn" type="button" data-level="1" aria-pressed="false"><b>1</b> พื้นฐาน</button>
+        <button class="lvbtn" type="button" data-level="2" aria-pressed="false"><b>2</b> รูปแบบ</button>
+        <button class="lvbtn" type="button" data-level="3" aria-pressed="false"><b>3</b> ลงลึก</button>
+      </div>
+      <button class="linkbtn" type="button" id="openLanding" style="margin:0">เลือกระดับ</button>
+    </div>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tabExplore" aria-selected="true" type="button">สำรวจ</button>
+      <button class="tab" role="tab" id="tabQuiz" aria-selected="false" type="button">แบบทดสอบ</button>
+      <button class="tab" role="tab" id="tabKey" aria-selected="false" type="button">รูปวิธาน</button>
+    </div>
+
+    <div id="explore">
+      <article class="info" id="info"></article>
+      <section class="group" data-lv="2" style="margin-top:20px">
+        <h3>ตัวอย่างแมลง · Specimen</h3>
+        <div class="antgrid" id="speciesGrid"></div>
+      </section>
+      <div id="gTypes">
+      <section class="group" data-lv="2" style="margin-top:20px">
+        <h3>ทิศทางของหัว 3 แบบ · Head orientation</h3>
+        <div class="antgrid" id="poseGrid"></div>
+      </section>
+      <section class="group" data-lv="2" style="margin-top:20px">
+        <h3>รูปร่างหนวด 13 แบบ · Antenna types</h3>
+        <div class="antgrid" id="antGrid"></div>
+      </section>
+      <section class="group" data-lv="2" style="margin-top:20px">
+        <h3 data-h2="ชนิดของปาก 7 แบบ · Mouthpart types">ชนิดของปาก 7 แบบ + แบบเสริม · Mouthpart types</h3>
+        <div class="antgrid" id="mouthGrid"></div>
+      </section>
+      <section class="group" data-lv="2" style="margin-top:20px">
+        <h3 data-h2="ลักษณะปีก 5 แบบ · Wing types">ลักษณะปีก 7 แบบ · Wing types</h3>
+        <div class="antgrid" id="wingGrid"></div>
+      </section>
+      <section class="group" data-lv="3" style="margin-top:20px">
+        <h3>เส้นปีกและการเกี่ยวปีก · Venation &amp; wing coupling</h3>
+        <div class="antgrid" id="wingExtraGrid"></div>
+      </section>
+      <section class="group" data-lv="2" style="margin-top:20px">
+        <h3>ชนิดของขา 8 แบบ · Leg types</h3>
+        <div class="antgrid" id="legGrid"></div>
+      </section>
+      <section class="group" data-lv="3" style="margin-top:20px">
+        <h3>ปลายเท้า 3 แบบ · Pretarsus types</h3>
+        <div class="antgrid" id="pretGrid"></div>
+      </section>
+      <section class="group" data-lv="1" style="margin-top:20px">
+        <h3>ปลายส่วนท้องตัวเมีย-ตัวผู้ · Terminalia</h3>
+        <div class="antgrid" id="sexGrid"></div>
+      </section>
+      </div>
+      <div class="groups" id="groups" style="margin-top:20px"></div>
+    </div>
+
+    <div id="quiz" hidden>
+      <div class="quizcard">
+        <div class="qhead"><div class="q" id="qPrompt">คลิกที่ส่วนนี้บนโมเดล</div><div class="qclock" id="qClock" hidden></div></div>
+        <div class="target" id="qTh"></div>
+        <div class="target-en" id="qEn"></div>
+        <div class="choices" id="qChoices"></div>
+        <div class="feedback" id="qFb" aria-live="polite"></div>
+        <div class="row" style="margin-top:8px">
+          <button class="btn" id="qHint" type="button">เฉลย</button>
+          <button class="btn" id="qNext" type="button">ข้อถัดไป</button>
+        </div>
+        <div class="score">
+          <div><b id="sRight">0</b><span>ถูกในครั้งแรก</span></div>
+          <div><b id="sAsked">0</b><span>ข้อที่ทำแล้ว</span></div>
+          <div><b id="sPct">–</b><span>ร้อยละ</span></div>
+        </div>
+      </div>
+      <div class="row" style="margin-top:16px">
+        <label class="field">รูปแบบ
+          <select id="qMode"><option value="find">หาชิ้นส่วนบนโมเดล</option><option value="name">บอกชื่อชิ้นที่ไฮไลต์</option></select>
+        </label>
+        <label class="field">จับเวลา
+          <select id="qTime"><option value="0">ไม่จับเวลา</option><option value="60">60 วินาที</option><option value="120">2 นาที</option></select>
+        </label>
+        <label class="field">ภาษา
+          <select id="qLang"><option value="both">ไทย + อังกฤษ</option><option value="th">ไทยอย่างเดียว</option><option value="en">อังกฤษอย่างเดียว</option></select>
+        </label>
+        <label class="field">หมวด
+          <select id="qGroup"><option value="all">ทุกส่วน</option></select>
+        </label>
+      </div>
+      <p class="hint" id="quizHint">ชิ้นส่วนบางชิ้นอยู่ด้านในหรือถูกบัง เช่น ลิ้น (hypopharynx) และปีกคู่หลัง ให้กด “แยกชิ้นส่วน” ก่อนตอบ</p>
+    </div>
+
+    <div id="keyPane" hidden>
+      <div class="keyhead">
+        <span class="chip">รูปวิธาน · Identification key</span>
+        <h2 class="keytitle">จำแนกอันดับแมลง</h2>
+        <p class="keysub">สำหรับแมลงตัวเต็มวัยที่มีปีก อ่านคำถามทีละข้อแล้วเลือกข้อที่ตรงกับแมลงที่ดูอยู่ กด “ดูบนโมเดล” เพื่อดูลักษณะนั้นบนโมเดล 3 มิติ</p>
+      </div>
+      <ol class="keypath" id="keyPath"></ol>
+      <div class="quizcard" id="keyCard"></div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn" id="keyBack" type="button">ย้อนกลับ</button>
+        <button class="btn" id="keyRestart" type="button">เริ่มใหม่</button>
+        <button class="btn" id="keyReset" type="button">คืนโมเดลตั๊กแตนจริง</button>
+      </div>
+      <p class="hint">รูปวิธานนี้ย่อให้ง่าย ครอบคลุม 12 กลุ่มที่พบบ่อยในงานเกษตร ไม่รวมแมลงไม่มีปีกและบางอันดับ เช่น Ephemeroptera, Trichoptera และ Phasmatodea · เนื้อหาเสริม ไม่มีในสไลด์ชุดนี้</p>
+    </div>
+  </aside>
+</div>
+
+<div class="landing" id="landing" role="dialog" aria-modal="true" aria-labelledby="landTitle" hidden>
+  <div class="landwrap">
+    <p class="land-eyebrow">AG 002 203 · Insect Morphology</p>
+    <h1 id="landTitle">สัณฐานวิทยาภายนอกของแมลง 3 มิติ</h1>
+    <p class="land-lede">เนื้อหาแบ่งเป็น 3 ระดับ เริ่มจากชื่อชิ้นส่วนพื้นฐานของตั๊กแตน แล้วค่อยเรียนรูปแบบที่ปรับตัวต่างกัน และรายละเอียดเชิงลึก เปลี่ยนระดับภายหลังได้จากแถบด้านบนของแผงข้อมูล</p>
+    <div class="landcards">
+      <button class="landcard" type="button" data-level="1">
+        <span class="lvnum">ระดับ 1</span>
+        <h2>พื้นฐาน</h2>
+        <p>ชื่อและตำแหน่งของชิ้นส่วนหลักบนตัวตั๊กแตน หัว ปาก 7 ส่วน อก 3 ปล้อง ปีก ขา และส่วนท้อง พร้อมแยกเพศจากปลายท้อง</p>
+        <ul><li id="lc1">–</li><li>แบบทดสอบหาชิ้นส่วนบนโมเดล</li></ul>
+        <span class="go">เริ่มที่นี่</span>
+      </button>
+      <button class="landcard" type="button" data-level="2">
+        <span class="lvnum">ระดับ 2</span>
+        <h2>รูปแบบและการปรับตัว</h2>
+        <p>หนวด 13 แบบ ปาก 7 แบบ ปีก 5 แบบ ขา 8 แบบ และทิศทางของหัว 3 แบบตามสไลด์ เทียบตั๊กแตนกับด้วงงวง</p>
+        <ul><li id="lc2">–</li><li>แบบทดสอบบอกชื่อและจับเวลา</li></ul>
+        <span class="pre">แนะนำให้ผ่านระดับ 1 ก่อน</span>
+      </button>
+      <button class="landcard" type="button" data-level="3">
+        <span class="lvnum">ระดับ 3</span>
+        <h2>ลงลึก</h2>
+        <p>รอยต่อบนหัว ส่วนย่อยของปาก แผ่นแข็งของอก เส้นปีกและการเกี่ยวปีก ปลายเท้า ปลายส่วนท้อง และรูปวิธานจำแนกอันดับ</p>
+        <ul><li id="lc3">–</li><li>เนื้อหาเสริมจาก Gullan &amp; Cranston</li></ul>
+        <span class="pre">แนะนำให้ผ่านระดับ 2 ก่อน</span>
+      </button>
+    </div>
+    <p class="land-foot">ภาควิชากีฏวิทยาและโรคพืช คณะเกษตรศาสตร์ มหาวิทยาลัยขอนแก่น · ใช้ได้ทั้งบนคอมพิวเตอร์และมือถือ</p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+"use strict";
+/* ================= content (from slide deck 02 Insect Morphology) ================= */
+const GROUPS = {
+  head:   {th:"ส่วนหัว",  en:"Head",       color:"#4a7fd6"},
+  mouth:  {th:"ปาก",     en:"Mouthparts", color:"#c46a9a"},
+  thorax: {th:"ส่วนอก",  en:"Thorax",     color:"#4f9c55"},
+  wing:   {th:"ปีก",     en:"Wings",      color:"#7c5cc4"},
+  leg:    {th:"ขา",      en:"Legs",       color:"#d24b3c"},
+  abdomen:{th:"ส่วนท้อง", en:"Abdomen",    color:"#e0a33c"}
+};
+const G2 = "Gullan & Cranston (2014) The Insects บทที่ 2";
+const INFO = {
+  "vertex":{g:"head",th:"กระหม่อม",en:"Vertex",ref:null,src:G2,
+    t:"ส่วนบนสุดของหัว อยู่ระหว่างตารวมทั้งสองข้าง ด้านหน้าติดกับ frons ด้านหลังติดกับ occiput ตาเดี่ยวคู่ข้างมักอยู่บริเวณนี้"},
+  "frons":{g:"head",th:"หน้าผาก",en:"Frons",ref:null,src:G2,
+    t:"ส่วนหน้าของหัวที่อยู่ระหว่างแขนทั้งสองของรอยต่อรูปตัว Y ด้านล่างติดกับ clypeus ตาเดี่ยวกลาง (median ocellus) อยู่บน frons"},
+  "clypeus":{g:"head",th:"แผ่นเหนือริมฝีปาก",en:"Clypeus",ref:null,src:G2,
+    t:"แผ่นที่อยู่ใต้ frons คั่นด้วยรอยต่อ frontoclypeal (epistomal suture) ขอบล่างเป็นที่ยึดของ labrum ในแมลงบางชนิด frons กับ clypeus เชื่อมรวมกันเป็น frontoclypeus"},
+  "gena":{g:"head",th:"แก้ม",en:"Gena",ref:null,src:G2,
+    t:"ด้านข้างของหัวใต้ตารวมทั้งสองข้าง ต่อลงไปถึงบริเวณที่กรามยึดติด (พหูพจน์ genae)"},
+  "occiput":{g:"head",th:"ท้ายทอย",en:"Occiput",ref:null,src:G2,
+    t:"ส่วนหลังของหัวรูปเกือกม้า ด้านบนติดกับ vertex ด้านข้างติดกับ gena ด้านหลังมีช่องเปิด (occipital foramen) ต่อกับคอและอก"},
+  "epicranial-suture":{g:"head",th:"รอยต่อรูปตัว Y",en:"Epicranial suture",ref:null,src:G2,
+    t:"รอยต่อรูปตัว Y กลับหัวบน vertex เป็นแนวที่เปลือกหัวของตัวอ่อนแยกออกตอนลอกคราบ (ecdysial line) แขน 2 ข้างของตัว Y เรียกว่า frontal sutures เป็นขอบของ frons ในแมลงตัวเต็มวัยหลายชนิดรวมทั้งตั๊กแตน แนวนี้มักเห็นไม่ชัด"},
+  "frontoclypeal-suture":{g:"head",th:"รอยต่อหน้าผาก-แผ่นเหนือริมฝีปาก",en:"Frontoclypeal suture",ref:null,src:G2,
+    t:"ร่องที่คั่นระหว่าง frons กับ clypeus (เรียกอีกชื่อว่า epistomal suture) เป็นแนวของสันแข็งที่อยู่ด้านในหัว"},
+  "weevil-snout":{g:"head",th:"งวงของด้วงงวง",en:"Rostrum (snout)",ref:null,src:G2,
+    t:"ส่วนหน้าของหัวที่ยืดยาวออกไปเป็นงวง ปากแบบกัดกินขนาดเล็กอยู่ที่ปลายงวง ด้วงงวงใช้งวงเจาะเนื้อเยื่อพืชหรือเมล็ดเพื่อกินและเพื่อทำรูวางไข่ ต่างจาก rostrum ของมวนและเพลี้ยซึ่งเกิดจาก labium ที่หุ้มเข็มเจาะ"},
+  "scrobe":{g:"head",th:"ร่องเก็บหนวด",en:"Antennal scrobe",ref:null,src:G2,
+    t:"ร่องที่ด้านข้างของงวง ด้วงงวงพับ scape ที่ยาวเก็บเข้าไปในร่องนี้ได้"},
+  "antennal-club":{g:"head",th:"ตุ้มหนวด",en:"Antennal club",ref:"15, 20",
+    t:"ปล้องปลายของหนวดที่ขยายใหญ่และอัดกันแน่นเป็นตุ้ม ด้วงงวงมีหนวดแบบข้อศอก (geniculate) ที่ปลายเป็นตุ้ม"},
+  "scutum":{g:"thorax",th:"แผ่นหลังอกตอนหน้า",en:"Scutum",ref:null,src:G2,
+    t:"แผ่นที่ใหญ่ที่สุดของ notum (tergum) ในอกปล้องกลางและปล้องท้าย ซึ่งเป็นปล้องที่มีปีก โคนปีกต่อกับขอบด้านข้างของ scutum ด้านหน้ายังมีแถบแคบๆ เรียกว่า prescutum ซึ่งไม่ได้แสดงในโมเดลนี้ · กด “แยกชิ้นส่วน” เพื่อยกปีกออกให้เห็น"},
+  "scutellum":{g:"thorax",th:"แผ่นหลังอกตอนท้าย",en:"Scutellum",ref:null,src:G2,
+    t:"แผ่นด้านท้ายของ notum ในอกปล้องที่มีปีก อยู่ถัดจาก scutum notum ของอกปล้องที่มีปีกแบ่งเป็น prescutum, scutum และ scutellum ในด้วงและมวน scutellum ของอกปล้องกลางมักเห็นเป็นแผ่นสามเหลี่ยมระหว่างโคนปีกคู่หน้า"},
+  "episternum":{g:"thorax",th:"แผ่นข้างตอนหน้า",en:"Episternum",ref:null,src:G2,
+    t:"ส่วนหน้าของแผ่นข้าง (pleuron) อยู่หน้าร่อง pleural suture ในอกปล้องกลางและปล้องท้าย ขอบล่างอยู่ใกล้จุดต่อ coxa"},
+  "epimeron":{g:"thorax",th:"แผ่นข้างตอนหลัง",en:"Epimeron",ref:null,src:G2,
+    t:"ส่วนหลังของแผ่นข้าง (pleuron) อยู่หลังร่อง pleural suture ในอกปล้องกลางและปล้องท้าย"},
+  "pleural-suture":{g:"thorax",th:"ร่องแผ่นข้าง",en:"Pleural suture",ref:null,src:G2,
+    t:"ร่องที่แบ่ง pleuron เป็น episternum (ด้านหน้า) กับ epimeron (ด้านหลัง) ทอดจากจุดต่อปีกด้านบนลงไปถึงจุดต่อ coxa ด้านล่าง ด้านในเป็นสันแข็งที่ช่วยรับแรงจากปีกและขา"},
+  "ventrite":{g:"abdomen",th:"แผ่นท้องด้านล่าง",en:"Ventrites",ref:null,src:G2,
+    t:"แผ่น sternum ของส่วนท้องที่มองเห็นจากด้านล่าง ด้วงงวงมี 5 แผ่น 2 แผ่นแรกเชื่อมติดกัน ส่วน tergum ด้านบนบางและอ่อนเพราะมีปีก elytra คลุมอยู่"},
+  "pygidium":{g:"abdomen",th:"แผ่นปลายท้อง",en:"Pygidium",ref:null,src:G2,
+    t:"tergum ปล้องสุดท้ายที่โผล่พ้นปลายปีก elytra พบในด้วงงวงมะพร้าวและด้วงอีกหลายวงศ์"},
+  "cranium":{g:"head",th:"แคปซูลหัว",en:"Head capsule (cranium)",ref:"28",
+    t:"โครงแข็งที่เป็นที่ตั้งของตา หนวด และปาก ตั๊กแตนมีหัวแบบหัวงุ้ม (hypognathous) คือปากชี้ลงด้านล่าง พบในแมลงที่กินพืช ต่างจากหัวเชิด (prognathous) ของด้วงตัวห้ำ และหัวงอ (opisthognathous) ของมวนและเพลี้ย"},
+  "compound-eye":{g:"head",th:"ตารวม",en:"Compound eye",ref:"2",
+    t:"ประกอบด้วยหน่วยตาย่อยจำนวนมากเรียกว่า ommatidium อัดรวมกันแน่น แต่ละ ommatidium มีส่วนรับแสง (corneal lens และ crystalline cone) และส่วนรับภาพ (retinular cells)"},
+  "ocellus":{g:"head",th:"ตาเดี่ยว",en:"Dorsal ocelli",ref:"3, 9",
+    t:"ช่วยรับรู้การเปลี่ยนแปลงความเข้มแสง ตาเดี่ยวด้านบน (dorsal ocelli) อยู่ระหว่างตารวมและพบในตัวเต็มวัย ตั๊กแตนมี 3 ตา ส่วนตาเดี่ยวด้านข้าง (stemmata) พบในตัวอ่อน"},
+  "antenna":{g:"head",th:"หนวด",en:"Antenna",ref:"10–12, 25",
+    t:"หนวดแบ่งเป็น 3 ส่วน คือ scape, pedicel และ flagellum ตั๊กแตนมีหนวดแบบเส้นด้าย (filiform) คือ annuli ของ flagellum มีขนาดเท่าๆ กันเรียงต่อกัน หนวดทำหน้าที่รับสัมผัสสิ่งเร้าจากภายนอก"},
+  "scape":{g:"head",th:"ฐานหนวด",en:"Scape",ref:"10, 20",
+    t:"ปล้องแรกของหนวดที่ติดกับส่วนหัว ในหนวดแบบข้อศอก (geniculate) ของมดและผึ้ง scape จะยาวมากและหักงอเป็นมุมกับ pedicel"},
+  "pedicel":{g:"head",th:"ข้อต่อหนวด",en:"Pedicel",ref:"10, 25",
+    t:"ปล้องที่ 2 ของหนวด อยู่ระหว่าง scape กับ flagellum ภายในมีอวัยวะรับการสั่นสะเทือน (Johnston’s organ) ซึ่งทำให้หนวดยุงตัวผู้ใช้ฟังเสียงได้"},
+  "flagellum":{g:"head",th:"เส้นหนวด",en:"Flagellum",ref:"10–11",
+    t:"ปล้องที่เหลือทั้งหมดจนถึงปลายหนวด แบ่งเป็นปล้องย่อยเรียกว่า annuli รูปร่างของ flagellum ใช้แบ่งชนิดหนวด 13 แบบ เช่น filiform, serrate, clavate, plumose"},
+  "labrum":{g:"mouth",th:"ริมฝีปากบน",en:"Labrum",ref:"26",
+    t:"มี 1 ชิ้น เป็นแผ่นบาง ขยับขึ้นลงเพื่อเปิดปิดช่องปาก ตรงกลางด้านในมีปุ่มนูนเรียกว่า epipharynx"},
+  "mandible":{g:"mouth",th:"กราม",en:"Mandibles",ref:"26, 29",
+    t:"มี 1 คู่ เป็นแผ่นแข็งหนา เคลื่อนเข้าหากันทางซ้าย-ขวาเพื่อกัดและบดอาหาร เป็นหัวใจของปากแบบกัดกิน (chewing type) ของตั๊กแตน"},
+  "maxilla":{g:"mouth",th:"ฟัน",en:"Maxillae",ref:"26",
+    t:"มี 1 คู่ อยู่ถัดจากกราม มีซี่ฟันเล็กๆ ช่วยกัดฉีกอาหาร และมีรยางค์ maxillary palp"},
+  "maxillary-palp":{g:"mouth",th:"รยางค์ของฟัน",en:"Maxillary palp",ref:"26",
+    t:"รยางค์เป็นปล้องที่ติดกับ maxilla ใช้สัมผัสและรับรสอาหาร"},
+  "labium":{g:"mouth",th:"ริมฝีปากล่าง",en:"Labium",ref:"26",
+    t:"มี 1 ชิ้น อยู่ตรงกลาง ประกบกับริมฝีปากบนเพื่อเปิดปิดช่องปาก มีรยางค์ labial palp 1 คู่"},
+  "labial-palp":{g:"mouth",th:"รยางค์ของริมฝีปากล่าง",en:"Labial palp",ref:"26",
+    t:"รยางค์ที่ติดกับ labium ช่วยสัมผัสและรับรสอาหาร"},
+  "hypopharynx":{g:"mouth",th:"ลิ้น",en:"Hypopharynx",ref:"26",
+    t:"อยู่ที่ฐานริมฝีปากล่างภายในช่องปาก มีช่องเปิดของท่อน้ำลาย มองไม่เห็นจากภายนอก กด “แยกชิ้นส่วน” เพื่อดู"},
+  "rostrum":{g:"mouth",th:"ปลอกงวง",en:"Rostrum (labial sheath)",ref:"30",
+    t:"เกิดจาก labium ที่ยืดยาวและพับเป็นร่อง ทำหน้าที่หุ้มและประคองเข็มเจาะ ตัวปลอกไม่ได้แทงลงไปในเนื้อเยื่อ แต่จะงอพับขึ้นขณะที่เข็มเจาะลงไป"},
+  "stylet":{g:"mouth",th:"เข็มเจาะ",en:"Stylets",ref:"30–31",
+    t:"เข็มยาวเรียวที่เปลี่ยนมาจาก mandibles และ maxillae (สีแดงเข้มมาจากกราม สีเขียวมาจากฟัน) maxillae 2 เส้นประกบกันเป็นท่อดูดอาหารและท่อปล่อยน้ำลาย"},
+  "mouth-cone":{g:"mouth",th:"กรวยปาก",en:"Mouth cone",ref:"31",
+    t:"กรวยสั้นที่หุ้ม stylet ไว้ภายใน เกิดจาก labrum และ labium ร่วมกับส่วนฐานของ maxillae"},
+  "proboscis":{g:"mouth",th:"งวง",en:"Proboscis",ref:"32",
+    t:"เกิดจาก galea ของ maxillae ทั้งสองข้างยืดยาวและประกบกันเป็นท่อกลวง ม้วนเก็บใต้หัวเมื่อไม่ใช้ เมื่อกด “แยกชิ้นส่วน” จะเห็นว่างวงประกอบด้วย 2 ซีก"},
+  "labellum":{g:"mouth",th:"แผ่นซับ",en:"Labellum",ref:"33, 35",
+    t:"ปลายของ labium ที่แผ่เป็นแผ่นนุ่ม 2 แผ่น ด้านล่างมีร่องเล็กๆ (pseudotracheae) จำนวนมาก ใช้ซับอาหารเหลวเข้าปาก"},
+  "glossa":{g:"mouth",th:"ลิ้น (glossa)",en:"Glossa",ref:"34",
+    t:"แผ่นคู่ด้านใน (mesal) ที่ปลาย labium ในตั๊กแตนมีขนาดเล็ก ส่วนในผึ้ง glossae ยืดยาวเชื่อมกันเป็นลิ้นมีขน ปลายเป็นแผ่นเล็กเรียกว่า flabellum ใช้เลียน้ำหวาน"},
+  "paraglossa":{g:"mouth",th:"แผ่นข้างลิ้น",en:"Paraglossa",ref:null,src:G2,
+    t:"แผ่นคู่ด้านนอกที่ปลาย labium อยู่ข้าง glossa เมื่อรวม glossae กับ paraglossae เรียกว่า ligula"},
+  "cardo":{g:"mouth",th:"ข้อต่อโคน maxilla",en:"Cardo",ref:null,src:G2,
+    t:"ปล้องโคนของ maxilla ที่ยึดติดกับหัว ทำหน้าที่เป็นบานพับให้ maxilla ขยับ"},
+  "stipes":{g:"mouth",th:"แผ่นฐาน maxilla",en:"Stipes",ref:null,src:G2,
+    t:"ส่วนฐานหลักของ maxilla ต่อจาก cardo เป็นที่ติดของ lacinia, galea และ maxillary palp"},
+  "lacinia":{g:"mouth",th:"แผ่นฟันด้านใน",en:"Lacinia",ref:null,src:G2,
+    t:"แผ่นด้านใน (mesal) ของ maxilla แข็งและปลายแหลมมีฟัน ใช้จับและฉีกอาหาร ในเพลี้ยไฟ lacinia เปลี่ยนเป็นเข็มเจาะ (stylet)"},
+  "galea":{g:"mouth",th:"แผ่นครอบด้านนอก",en:"Galea",ref:null,src:G2,
+    t:"แผ่นด้านนอก (lateral) ของ maxilla ลักษณะคล้ายฝาครอบ มีขนรับสัมผัสและรับรส ในผีเสื้อ galea ทั้ง 2 ข้างยืดยาวประกบกันเป็นงวง (proboscis)"},
+  "postmentum":{g:"mouth",th:"ฐานริมฝีปากล่าง",en:"Postmentum",ref:null,src:G2,
+    t:"ส่วนโคนของ labium ที่ติดกับด้านล่างของหัว บางครั้งแบ่งย่อยเป็น submentum และ mentum"},
+  "prementum":{g:"mouth",th:"ส่วนปลายริมฝีปากล่าง",en:"Prementum",ref:null,src:G2,
+    t:"ส่วนปลายของ labium ที่ขยับได้อิสระ เป็นที่ติดของ labial palps, glossae และ paraglossae ในตัวอ่อนแมลงปอ labium ยืดออกเป็น “หน้ากาก” (mask) ใช้จับเหยื่อ"},
+  "labial-mask":{g:"mouth",th:"หน้ากาก",en:"Labial mask",ref:null,src:G2,
+    t:"labium ของตัวอ่อนแมลงปอและแมลงปอเข็มที่ยืดยาวและพับได้ ประกอบด้วย postmentum (ท่อนโคน) ข้อพับ และ prementum (ท่อนปลายที่แบนกว้าง) ปลายมี labial palps ที่เปลี่ยนเป็นแผ่นตะขอ 1 คู่ (palpal lobes) ดีดออกจับเหยื่อได้ในเวลาเสี้ยววินาที ด้วยแรงดันของเหลวในลำตัวร่วมกับกล้ามเนื้อ"},
+  "palpal-hook":{g:"mouth",th:"ตะขอปลายหน้ากาก",en:"Movable hook (palpal lobe)",ref:null,src:G2,
+    t:"ตะขอแหลมที่ปลาย palpal lobe ทั้ง 2 ข้างของหน้ากาก ใช้เกี่ยวและหนีบเหยื่อ เช่น ลูกน้ำ ลูกอ๊อด และปลาเล็ก"},
+  "prothorax":{g:"thorax",th:"อกปล้องแรก",en:"Prothorax",ref:"37",
+    t:"ปล้องอกปล้องแรก ต่อจากส่วนหัว มีขาคู่หน้า 1 คู่ และไม่มีปีก ด้านบนมีแผ่นแข็งรูปอานม้าขนาดใหญ่เรียกว่า pronotum"},
+  "mesothorax":{g:"thorax",th:"อกปล้องกลาง",en:"Mesothorax",ref:"37",
+    t:"ปล้องอกปล้องที่ 2 มีขาคู่กลางและปีกคู่หน้า"},
+  "metathorax":{g:"thorax",th:"อกปล้องท้าย",en:"Metathorax",ref:"37",
+    t:"ปล้องอกปล้องที่ 3 มีขาคู่หลังและปีกคู่หลัง"},
+  "pronotum":{g:"thorax",th:"แผ่นหลังอกปล้องแรก",en:"Pronotum",ref:"37",
+    t:"คือ tergum ของ prothorax ในตั๊กแตนแผ่นนี้ใหญ่และโค้งเป็นรูปอานม้า คลุมทั้งด้านบนและด้านข้าง"},
+  "tergum":{g:"thorax",th:"แผ่นสันหลัง",en:"Tergum (notum)",ref:"37",
+    t:"แผ่นแข็งที่ปิดด้านบน (dorsal) ของปล้องอกแต่ละปล้อง เมื่อแยกชิ้นส่วน แผ่นนี้จะลอยขึ้นด้านบน"},
+  "pleuron":{g:"thorax",th:"แผ่นข้าง",en:"Pleuron",ref:"37",
+    t:"แผ่นแข็งที่ปิดด้านข้าง (lateral) ทั้ง 2 ด้านของปล้องอก ขาต่อกับลำตัวระหว่าง pleuron กับ sternum"},
+  "sternum":{g:"thorax",th:"แผ่นอก",en:"Sternum",ref:"37",
+    t:"แผ่นแข็งที่ปิดด้านล่าง (ventral) ของปล้องอก เมื่อแยกชิ้นส่วน แผ่นนี้จะเลื่อนลงด้านล่าง"},
+  "forewing":{g:"wing",th:"ปีกคู่หน้า",en:"Forewing — tegmina",ref:"38, 40",
+    t:"ปีกคู่หน้าของตั๊กแตนเป็นแบบ tegmina คือเนื้อปีกเหนียวและหนา ช่วยปกป้องปีกคู่หลังที่พับอยู่ข้างใต้ ติดกับ mesothorax"},
+  "hindwing":{g:"wing",th:"ปีกคู่หลัง",en:"Hindwing — membrane",ref:"38–39",
+    t:"เป็นเยื่อบางใส (membrane) มีเส้นปีกจำนวนมาก ขณะเกาะจะพับเป็นจีบคล้ายพัดอยู่ใต้ปีกคู่หน้า และกางออกเมื่อบิน ติดกับ metathorax"},
+  "corium":{g:"wing",th:"ส่วนโคนปีกที่หนา",en:"Corium",ref:"38, 41",
+    t:"ส่วนโคนด้านหน้าของปีกแบบ hemelytra ที่หนาและเหนียว ปีก hemelytra แบ่งเป็น 3 ส่วน คือ corium, clavus และ membrane (ส่วนปลายที่เป็นเยื่อบาง)"},
+  "clavus":{g:"wing",th:"ส่วนโคนปีกด้านหลัง",en:"Clavus",ref:null,src:G2,
+    t:"แถบโคนปีกด้านหลัง (ด้าน anal) ของปีกแบบ hemelytra หนาเหมือน corium แต่คั่นด้วยร่อง (claval suture) ขณะพับปีก clavus ของปีกทั้งสองข้างจะเรียงชิดกันกลางหลัง"},
+  "haltere":{g:"wing",th:"ตุ่มทรงตัว",en:"Haltere",ref:null,src:G2,
+    t:"ปีกคู่หลังของแมลงวันที่ลดรูปเป็นก้านสั้นปลายเป็นตุ่ม ติดกับ metathorax ขยับสั่นขณะบินและช่วยรับรู้การหมุนของลำตัว เพื่อรักษาการทรงตัว"},
+  "fringe":{g:"wing",th:"ขนพู่ขอบปีก",en:"Wing fringe (marginal setae)",ref:null,src:G2,
+    t:"ขนยาวที่เรียงอยู่รอบขอบปีกของเพลี้ยไฟ ขนด้านหลังของปีกยาวกว่าด้านหน้า ทำให้ปีกที่แคบมากมีพื้นที่รับลมมากขึ้น"},
+  "vein-C":{g:"wing",th:"เส้นคอสตา",en:"Costa (C)",ref:null,src:G2,
+    t:"เส้นปีกตามยาวเส้นแรก อยู่ที่ขอบหน้าของปีก มักไม่แตกสาขา ช่วยให้ขอบหน้าของปีกแข็งแรงเมื่อปีกกระพือ"},
+  "vein-Sc":{g:"wing",th:"เส้นซับคอสตา",en:"Subcosta (Sc)",ref:null,src:G2,
+    t:"เส้นปีกตามยาวเส้นที่ 2 อยู่ถัดจาก costa ในร่องระหว่าง C กับ R มักสั้นและไม่แตกสาขา หรือแตกเป็น 2 สาขา (Sc1, Sc2)"},
+  "vein-R":{g:"wing",th:"เส้นเรเดียส",en:"Radius (R)",ref:null,src:G2,
+    t:"เส้นปีกตามยาวที่แข็งแรงที่สุด แตกเป็น R1 ซึ่งไปสิ้นสุดที่ขอบหน้าของปีก และ radial sector (Rs) ซึ่งแตกสาขาต่อได้สูงสุด 4 สาขา (R2–R5) ในโมเดลนี้แสดง Rs 2 สาขา"},
+  "vein-M":{g:"wing",th:"เส้นมีเดีย",en:"Media (M)",ref:null,src:G2,
+    t:"เส้นปีกตามยาวที่อยู่กลางปีก แตกสาขาได้สูงสุด 4 สาขา (M1–M4) ไปสิ้นสุดที่ขอบปีกบริเวณปลายปีก ในโมเดลนี้แสดง 2 สาขา"},
+  "vein-Cu":{g:"wing",th:"เส้นคิวบิตัส",en:"Cubitus (Cu)",ref:null,src:G2,
+    t:"เส้นปีกตามยาวที่อยู่ถัดจาก media ไปทางขอบหลังของปีก แตกเป็น 2 สาขาหลัก คือ Cu1 และ Cu2"},
+  "vein-A":{g:"wing",th:"เส้นแอนัล",en:"Anal veins (A)",ref:null,src:G2,
+    t:"เส้นปีกตามยาวในบริเวณโคนด้านหลังของปีก (anal area) มักมีหลายเส้น เรียกว่า 1A, 2A, 3A และมักไม่แตกสาขา"},
+  "cv-h":{g:"wing",th:"เส้นขวางฮิวเมอรัล",en:"Humeral crossvein (h)",ref:null,src:G2,
+    t:"เส้นขวางสั้นๆ ใกล้โคนปีก เชื่อมระหว่าง costa กับ subcosta"},
+  "cv-r":{g:"wing",th:"เส้นขวางเรเดียล",en:"Radial crossvein (r)",ref:null,src:G2,
+    t:"เส้นขวางที่เชื่อม R1 กับ radial sector (Rs)"},
+  "cv-rm":{g:"wing",th:"เส้นขวางเรดิโอ-มีเดียล",en:"Radio-medial crossvein (r-m)",ref:null,src:G2,
+    t:"เส้นขวางที่เชื่อมระหว่าง radius (Rs) กับ media"},
+  "cv-m":{g:"wing",th:"เส้นขวางมีเดียล",en:"Medial crossvein (m)",ref:null,src:G2,
+    t:"เส้นขวางที่เชื่อมระหว่างสาขาของ media"},
+  "cv-mcu":{g:"wing",th:"เส้นขวางมีดิโอ-คิวบิทัล",en:"Medio-cubital crossvein (m-cu)",ref:null,src:G2,
+    t:"เส้นขวางที่เชื่อมระหว่าง media กับ cubitus"},
+  "cv-cua":{g:"wing",th:"เส้นขวางคิวบิโต-แอนัล",en:"Cubito-anal crossvein (cu-a)",ref:null,src:G2,
+    t:"เส้นขวางที่เชื่อมระหว่าง cubitus กับเส้น anal เส้นแรก"},
+  "hamuli":{g:"wing",th:"ตะขอเกี่ยวปีก",en:"Hamuli",ref:null,src:G2,
+    t:"ตะขอเล็กๆ เรียงเป็นแถวที่ขอบหน้าของปีกคู่หลังของผึ้ง ต่อ แตน เกี่ยวกับรอยพับที่ขอบหลังของปีกคู่หน้า ทำให้ปีกทั้ง 2 คู่ขยับพร้อมกันเหมือนเป็นปีกคู่เดียว"},
+  "frenulum":{g:"wing",th:"ขนเกี่ยวปีก",en:"Frenulum",ref:null,src:G2,
+    t:"ขนแข็งที่โคนขอบหน้าของปีกคู่หลังของผีเสื้อกลางคืน เพศผู้มักมี 1 เส้น เพศเมียมีหลายเส้น ยื่นไปสอดเกี่ยวกับ retinaculum ใต้ปีกคู่หน้า"},
+  "retinaculum":{g:"wing",th:"ตะขอรับขนเกี่ยวปีก",en:"Retinaculum",ref:null,src:G2,
+    t:"ตะขอหรือกลุ่มขนที่ด้านล่างของปีกคู่หน้าของผีเสื้อกลางคืน ใช้ยึด frenulum ไว้ ปีกทั้ง 2 คู่จึงติดกันขณะบิน"},
+  "coxa":{g:"leg",th:"โคนขา",en:"Coxa",ref:"43",
+    t:"ปล้องแรกของขา ต่อกับลำตัว"},
+  "trochanter":{g:"leg",th:"ปล้องต่อโคนขา",en:"Trochanter",ref:"43",
+    t:"ปล้องเล็กอยู่ถัดจาก coxa เชื่อมต่อกับ femur"},
+  "femur":{g:"leg",th:"ต้นขา",en:"Femur",ref:"43, 48",
+    t:"ปล้องขาที่ใหญ่และแข็งแรงที่สุด ภายในมีมัดกล้ามเนื้อจำนวนมาก ขาคู่หลังของตั๊กแตนมี femur ขยายใหญ่เป็นพิเศษสำหรับกระโดด"},
+  "tibia":{g:"leg",th:"หน้าแข้ง",en:"Tibia",ref:"43",
+    t:"ปล้องเรียวยาวถัดจาก femur tibia ขาคู่หลังของตั๊กแตนมีหนามเรียงเป็นแถว"},
+  "tarsus":{g:"leg",th:"ปล้องเท้า",en:"Tarsus",ref:"43",
+    t:"แบ่งเป็นปล้องเล็กๆ 2–5 ปล้อง แต่ละปล้องเรียกว่า tarsomere จำนวน tarsomere ของขาคู่หน้า-กลาง-หลังเขียนเป็นสูตรเรียกว่า tarsal formula ตั๊กแตนมีสูตร 3-3-3"},
+  "pretarsus":{g:"leg",th:"ปลายเท้า",en:"Pretarsus",ref:"43, 46",
+    t:"ปล้องปลายสุดของขา มีเล็บ (claw) 1 คู่ ตั๊กแตนมีแผ่นยึดเกาะ arolium อยู่ระหว่างเล็บ ส่วนแมลงบางกลุ่มมี pulvilli และ empodium แทน"},
+  "claw":{g:"leg",th:"เล็บ",en:"Claws (ungues)",ref:null,src:G2,
+    t:"เล็บแหลม 1 คู่ที่ปลายสุดของขา ใช้เกี่ยวยึดกับผิวที่ขรุขระ แมลงเกือบทุกชนิดมีเล็บ"},
+  "arolium":{g:"leg",th:"แผ่นยึดเกาะกลาง",en:"Arolium",ref:null,src:G2,
+    t:"แผ่นนุ่ม 1 แผ่นอยู่ระหว่างเล็บทั้งสอง ช่วยให้เกาะผิวเรียบได้ พบในตั๊กแตน แมลงสาบ ผึ้ง และต่อ"},
+  "pulvillus":{g:"leg",th:"แผ่นยึดเกาะใต้เล็บ",en:"Pulvilli",ref:null,src:G2,
+    t:"แผ่นนุ่ม 1 คู่ อยู่ใต้เล็บข้างละแผ่น ผิวมีขนเล็กๆ จำนวนมาก ทำให้แมลงวันเกาะผนังหรือกระจกได้"},
+  "empodium":{g:"leg",th:"ขนกลางปลายเท้า",en:"Empodium",ref:null,src:G2,
+    t:"ขนแข็งหรือแผ่นเล็กๆ ที่อยู่ตรงกลางระหว่าง pulvilli ทั้งสอง พบในแมลงวัน"},
+  "leg-fore":{g:"leg",th:"ขาคู่หน้า",en:"Foreleg — walking leg",ref:"47",
+    t:"ติดกับ prothorax เป็นขาเดิน (walking leg) femur และ tibia เรียวยาว"},
+  "leg-mid":{g:"leg",th:"ขาคู่กลาง",en:"Midleg — walking leg",ref:"47",
+    t:"ติดกับ mesothorax เป็นขาเดิน (walking leg)"},
+  "leg-hind":{g:"leg",th:"ขาคู่หลัง",en:"Hindleg — jumping leg",ref:"48",
+    t:"ติดกับ metathorax เป็นขากระโดด (jumping leg) femur ขยายใหญ่ ภายในมีกล้ามเนื้อแข็งแรง พบในตั๊กแตนและเพลี้ยกระโดด"},
+  "pollen-basket":{g:"leg",th:"ตะกร้าเก็บละอองเกสร",en:"Pollen basket (corbicula)",ref:"54",
+    t:"ปลาย tibia ขาคู่หลังของผึ้งงานแบนใหญ่ และมีขนยาวล้อมรอบเป็นตะกร้า ใช้เก็บก้อนละอองเกสร (สีส้ม) กลับรัง"},
+  "comb":{g:"leg",th:"แปรงขน",en:"Comb",ref:"54",
+    t:"ขนแข็งเรียงเป็นแถวๆ ด้านในของ metatarsus ทำหน้าที่ปัดละอองเกสรจากส่วนท้องของผึ้ง"},
+  "rake":{g:"leg",th:"คราด",en:"Rake",ref:"54",
+    t:"ขนแข็ง 1 แถวที่ปลายสุดของ tibia ใช้กวาดรวบรวมละอองเกสรที่ติดอยู่บน comb ส่งไปยัง pollen press"},
+  "pollen-press":{g:"leg",th:"ที่อัดละอองเกสร",en:"Pollen press",ref:"54",
+    t:"อยู่ทางตอนหน้าของ metatarsus ดันละอองเกสรที่รวบรวมได้ขึ้นไปเก็บใน pollen basket"},
+  "abdomen":{g:"abdomen",th:"ส่วนท้อง",en:"Abdomen",ref:null,src:G2,
+    t:"ส่วนท้องของแมลงมีได้ถึง 11 ปล้อง ปล้องที่ 1–7 มีโครงสร้างคล้ายกันและไม่มีรยางค์ ปล้องที่ 8–9 มีอวัยวะสืบพันธุ์ภายนอก ปล้องที่ 10 ไม่มีรยางค์ ส่วนปล้องที่ 11 ลดรูปเหลือ epiproct และ paraproct พร้อม cerci 1 คู่ ภายในเป็นที่อยู่ของระบบย่อยอาหาร ระบบขับถ่าย และอวัยวะสืบพันธุ์"},
+  "epiproct":{g:"abdomen",th:"แผ่นปิดทวารด้านบน",en:"Epiproct",ref:null,src:G2,
+    t:"แผ่นแข็งรูปสามเหลี่ยมด้านบนของปล้องที่ 11 ปิดอยู่เหนือรูทวาร"},
+  "paraproct":{g:"abdomen",th:"แผ่นข้างทวาร",en:"Paraprocts",ref:null,src:G2,
+    t:"แผ่นแข็ง 1 คู่ด้านล่างของปล้องที่ 11 อยู่ข้างรูทวาร มาจาก sternum ของปล้องนี้"},
+  "ovipositor":{g:"abdomen",th:"อวัยวะวางไข่",en:"Ovipositor",ref:null,src:G2,
+    t:"อวัยวะวางไข่ของตัวเมีย ตั๊กแตนมีแบบที่เกิดจากรยางค์ของปล้องที่ 8 และ 9 (appendicular ovipositor) เป็น valve สั้นแข็ง 2 คู่ คือคู่บนและคู่ล่าง ใช้ขุดดินแล้ววางไข่เป็นฝักใต้ดิน ส่วนผีเสื้อ ด้วง และแมลงวันใช้ปล้องปลายท้องที่ยืดหดได้แทน (substitutional ovipositor) และในผึ้ง ต่อ แตน ovipositor เปลี่ยนเป็นเหล็กใน"},
+  "subgenital-plate":{g:"abdomen",th:"แผ่นใต้อวัยวะสืบพันธุ์",en:"Subgenital plate",ref:null,src:G2,
+    t:"แผ่นใต้ปลายท้องของตัวผู้ เกิดจาก sternum ปล้องที่ 9 ที่ขยายใหญ่และงอนขึ้นคล้ายหัวเรือ ปิดอวัยวะสืบพันธุ์ตัวผู้ (aedeagus) ไว้ภายใน ทำให้ปลายท้องตัวผู้ดูมนและงอนขึ้น ต่างจากตัวเมียที่เห็น valve ของ ovipositor"},
+  "tympanum":{g:"abdomen",th:"อวัยวะรับเสียง",en:"Tympanum",ref:null,
+    t:"แผ่นเยื่อบางที่ด้านข้างของปล้องท้องปล้องแรก ใช้รับเสียง พบในตั๊กแตนหนวดสั้น (Acrididae) ส่วนจิ้งหรีดมีอวัยวะนี้ที่ tibia ของขาคู่หน้า"},
+  "spiracle":{g:"abdomen",th:"รูหายใจ",en:"Spiracle",ref:null,src:G2,
+    t:"รูเปิดของระบบท่อลม (tracheal system) ใช้แลกเปลี่ยนอากาศ ตั๊กแตนมี 10 คู่ คือที่ด้านข้างของอกปล้องกลางและอกปล้องท้าย 2 คู่ (คู่ของอกปล้องกลางซ่อนอยู่ใต้ขอบ pronotum) และที่ส่วนท้องปล้องที่ 1–8 อีก 8 คู่"},
+  "cercus":{g:"abdomen",th:"แพนหาง",en:"Cerci",ref:null,src:G2,
+    t:"รยางค์ 1 คู่ของปล้องที่ 11 ที่ปลายส่วนท้อง ทำหน้าที่รับสัมผัส ในแมลงหางหนีบ cerci เปลี่ยนเป็นคีม"}
+};
+const ORDER = {
+  head:["cranium","vertex","frons","clypeus","gena","occiput","epicranial-suture","frontoclypeal-suture","weevil-snout","scrobe","compound-eye","ocellus","antenna","scape","pedicel","flagellum","antennal-club"],
+  mouth:["labrum","mandible","maxilla","cardo","stipes","lacinia","galea","maxillary-palp","labium","postmentum","prementum","glossa","paraglossa","labial-palp","labial-mask","palpal-hook","hypopharynx"],
+  thorax:["prothorax","mesothorax","metathorax","pronotum","tergum","scutum","scutellum","pleuron","episternum","epimeron","pleural-suture","sternum"],
+  wing:["forewing","hindwing","corium","clavus","haltere","fringe","vein-C","vein-Sc","vein-R","vein-M","vein-Cu","vein-A","cv-h","cv-r","cv-rm","cv-m","cv-mcu","cv-cua","hamuli","frenulum","retinaculum"],
+  leg:["leg-fore","leg-mid","leg-hind","coxa","trochanter","femur","tibia","tarsus","pretarsus","claw","arolium","pulvillus","empodium"],
+  abdomen:["abdomen","tympanum","spiracle","ventrite","pygidium","epiproct","paraproct","cercus","ovipositor","subgenital-plate"]
+};
+const MOUTH_MAIN = ["labrum","mandible","maxilla","maxillary-palp","labium","labial-palp","hypopharynx"];
+const HEADPOSE = {
+  hypognathous:   {n:1, th:"หัวงุ้ม", en:"Hypognathous",   a:0,
+    t:"ปากชี้ลงด้านล่าง แกนของหัวตั้งฉากกับลำตัว เป็นแบบพื้นฐาน มักพบในแมลงกินพืช", ex:"ตั๊กแตน จิ้งหรีด แมลงสาบ"},
+  prognathous:    {n:2, th:"หัวเชิด", en:"Prognathous",    a:1.0,
+    t:"ปากชี้ไปด้านหน้า แกนของหัวขนานกับลำตัว ด้านล่างของหัวช่วงคอมีแผ่น gula พบในแมลงตัวห้ำและแมลงที่ชอนไช", ex:"ด้วงดิน ด้วงเสือ แมลงหางหนีบ ตัวอ่อนแมลงหลายชนิด"},
+  opisthognathous:{n:3, th:"หัวงอ",   en:"Opisthognathous", a:-1.0,
+    t:"ปากชี้ไปทางด้านหลัง แนบไปใต้ลำตัวระหว่างขาคู่หน้า พบในแมลงปากเจาะดูด", ex:"มวน เพลี้ยจักจั่น เพลี้ยอ่อน จักจั่น"}
+};
+const SEXES = {
+  female:{n:1, th:"ตัวเมีย", en:"Female", sel:"ovipositor"},
+  male:  {n:2, th:"ตัวผู้",  en:"Male",   sel:"subgenital-plate"}
+};
+
+/* ================= three.js scene ================= */
+THREE.ColorManagement.legacyMode = false;
+const stage = document.getElementById("stage");
+const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+stage.prepend(renderer.domElement);
+renderer.domElement.tabIndex = 0;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
+const HOME = {pos:new THREE.Vector3(4.2, 2.8, 8.6), target:new THREE.Vector3(-0.6, -0.25, 0)};
+camera.position.copy(HOME.pos);
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.target.copy(HOME.target);
+controls.enableDamping = true; controls.dampingFactor = 0.08;
+controls.minDistance = 1.2; controls.maxDistance = 24;
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+controls.autoRotate = !reduceMotion; controls.autoRotateSpeed = 0.7;
+
+scene.add(new THREE.HemisphereLight(0xf4f7ff, 0x3d4a40, 0.75));
+const key = new THREE.DirectionalLight(0xffffff, 1.15);
+key.position.set(5, 9, 6); key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+Object.assign(key.shadow.camera, {left:-8, right:8, top:8, bottom:-8, near:1, far:30});
+key.shadow.bias = -0.0005;
+scene.add(key);
+const fill = new THREE.DirectionalLight(0xdfe8ff, 0.35); fill.position.set(-6, 3, -5); scene.add(fill);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.ShadowMaterial({opacity:0.16}));
+ground.rotation.x = -Math.PI/2; ground.position.y = -1.6; ground.receiveShadow = true; scene.add(ground);
+
+/* cuticle texture: tiny punctures used as a bump map */
+const bump = (function(){
+  const c = document.createElement("canvas"); c.width = c.height = 256;
+  const g = c.getContext("2d"); g.fillStyle = "#808080"; g.fillRect(0,0,256,256);
+  let s = 7; const rnd = () => (s = (s*16807) % 2147483647) / 2147483647;
+  for (let i=0;i<900;i++){ const x=rnd()*256, y=rnd()*256, r=1+rnd()*2.2;
+    g.fillStyle = "rgba(40,40,40,"+(0.35+rnd()*0.4)+")"; g.beginPath(); g.arc(x,y,r,0,7); g.fill(); }
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(3,3); return t;
+})();
+
+const root = new THREE.Group(); scene.add(root);
+const pickables = [], movers = [], wings = [];
+const V = (x,y,z) => new THREE.Vector3(x,y,z);
+const UP = V(0,1,0);
+
+function makeMat(color, extra){
+  const m = new THREE.MeshStandardMaterial(Object.assign({color, roughness:0.55, metalness:0.0, bumpMap:bump, bumpScale:0.035}, extra||{}));
+  m.userData.baseOpacity = m.opacity; return m;
+}
+/* ================= levels ================= */
+/* each part key belongs to level 1, 2 or 3 (anything not listed = 3). At a lower level a mesh keeps only the
+   tags allowed there, so e.g. the cardo becomes part of "maxilla"; a mesh left with no tag is hidden. */
+const LV1 = ["cranium","vertex","frons","clypeus","gena","compound-eye","ocellus","antenna",
+  "labrum","mandible","maxilla","maxillary-palp","labium","labial-palp","hypopharynx",
+  "prothorax","mesothorax","metathorax","pronotum","forewing","hindwing",
+  "leg-fore","leg-mid","leg-hind","coxa","trochanter","femur","tibia","tarsus",
+  "abdomen","spiracle","tympanum","cercus","ovipositor","subgenital-plate"];
+const LV2 = ["scape","pedicel","flagellum","antennal-club","tergum","pleuron","sternum","corium","clavus","weevil-snout","scrobe"];
+const LV = {}; LV1.forEach(k => LV[k] = 1); LV2.forEach(k => LV[k] = 2);
+const lvOf = k => LV[k] || 3;
+let LEVEL = 3;   /* the model is built at level 3, then applyLevel() trims it */
+const lvTags = tags => LEVEL >= 3 ? tags.slice() : tags.filter(t => lvOf(t) <= LEVEL);
+function reg(mesh, tags, ex, isMover){
+  mesh.userData.allTags = tags;
+  mesh.userData.tags = lvTags(tags);
+  if (!mesh.userData.tags.length) mesh.visible = false;
+  mesh.castShadow = true; mesh.receiveShadow = true;
+  pickables.push(mesh);
+  if (isMover !== false){ mesh.userData.basePos = mesh.position.clone(); mesh.userData.ex = ex.clone(); movers.push(mesh); root.add(mesh); }
+  return mesh;
+}
+function ell(sx,sy,sz,color,pos,extra){
+  const m = new THREE.Mesh(new THREE.SphereGeometry(1, 36, 24), makeMat(color, extra));
+  m.scale.set(sx,sy,sz); m.position.copy(pos); return m;
+}
+function capsuleGeo(len, r0, r1, bulge){
+  const pts = [], n = 20, k = 0.14;
+  for (let i=0;i<=n;i++){
+    const t = i/n; let e = 1;
+    if (t < k) e = Math.sqrt(Math.max(0, 1-((k-t)/k)**2));
+    else if (t > 1-k) e = Math.sqrt(Math.max(0, 1-((t-(1-k))/k)**2));
+    const r = (r0 + (r1-r0)*t + (bulge||0)*Math.sin(Math.PI*t)) * e;
+    pts.push(new THREE.Vector2(Math.max(r,0), t*len));
+  }
+  return new THREE.LatheGeometry(pts, 16);
+}
+function seg(a, b, r0, r1, bulge, color){
+  const d = b.clone().sub(a); const len = d.length();
+  const m = new THREE.Mesh(capsuleGeo(len, r0, r1, bulge), makeMat(color));
+  m.position.copy(a); m.quaternion.setFromUnitVectors(UP, d.normalize());
+  m.userData.dir = d.clone(); return m;
+}
+function chain(points, r0, r1, color, tags, ex, gapFrac){
+  for (let i=0;i<points.length-1;i++){
+    const a = points[i], b = points[i+1].clone();
+    if (gapFrac) b.lerp(a, gapFrac);
+    reg(seg(a, b, r0, r1, 0, color), tags, ex);
+  }
+}
+
+/* ---------------- head ---------------- */
+const H = V(2.05, 0.3, 0);
+const headEx = V(1.7, 0.45, 0);
+reg(ell(0.62,0.82,0.56,"#4a7fd6",H), ["cranium"], headEx);
+for (const s of [1,-1]){
+  reg(ell(0.2,0.32,0.13,"#1f2c55",H.clone().add(V(0.18,0.22,s*0.47)),{roughness:0.25,bumpScale:0.06}), ["compound-eye"], headEx.clone().add(V(0,0.2,s*0.9)));
+}
+const ocelli = [V(0.58,0.12,0), V(0.42,0.5,0.2), V(0.42,0.5,-0.2)];
+for (const o of ocelli){
+  reg(new THREE.Mesh(new THREE.SphereGeometry(0.055,16,12), makeMat("#f3d27a",{roughness:0.2,bumpMap:null})), ["ocellus"], headEx.clone().add(V(0.6,0.45,o.z*1.5))).position.copy(H.clone().add(o));
+}
+// fix ocellus base positions (set after reg)
+movers.filter(m=>m.userData.tags[0]==="ocellus").forEach(m=>m.userData.basePos.copy(m.position));
+
+/* head regions: thin shells over the cranium (front of the head is +x); angles are in units of π.
+   SphereGeometry maps phi=π to +x, phi=π/2 to +z, theta=0 to the top. */
+const CR = V(0.62, 0.82, 0.56);
+const headDir = (th, ph) => V(-Math.cos(ph*Math.PI)*Math.sin(th*Math.PI), Math.cos(th*Math.PI), Math.sin(ph*Math.PI)*Math.sin(th*Math.PI));
+function headPatch(tags, color, ph0, phL, th0, thL){
+  const g = new THREE.SphereGeometry(1, 40, 16, ph0*Math.PI, phL*Math.PI, th0*Math.PI, thL*Math.PI);
+  const m = new THREE.Mesh(g, makeMat(color, {side:THREE.DoubleSide}));
+  m.scale.copy(CR).multiplyScalar(1.012); m.position.copy(H);
+  reg(m, tags, headEx.clone().addScaledVector(headDir(th0+thL/2, ph0+phL/2), 0.35));
+}
+headPatch(["vertex","cranium"], "#3d70c8", 0.45, 1.1, 0, 0.3);
+headPatch(["occiput","cranium"], "#2d5aa6", 1.6, 0.8, 0.12, 0.45);
+headPatch(["frons","cranium"], "#78a5ec", 0.78, 0.44, 0.3, 0.36);
+headPatch(["clypeus","cranium"], "#a7c4f2", 0.83, 0.34, 0.66, 0.11);
+headPatch(["gena","cranium"], "#5b8ad6", 0.4, 0.32, 0.52, 0.28);
+headPatch(["gena","cranium"], "#5b8ad6", 1.28, 0.32, 0.52, 0.28);
+{
+  const S = (th, ph) => H.clone().add(headDir(th, ph).multiply(CR).multiplyScalar(1.03));
+  const suture = (pts, tags) => reg(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 64, 0.014, 6, false), makeMat("#14234a", {bumpMap:null})), tags, headEx);
+  const ET = ["epicranial-suture","cranium"];
+  suture([S(0.24,0), S(0.12,0), S(0.001,0.5), S(0.12,1), S(0.22,1), S(0.3,1)], ET);
+  for (const s of [1,-1]) suture([S(0.3,1), S(0.42,1-s*0.1), S(0.54,1-s*0.17), S(0.645,1-s*0.21)], ET);
+  suture([S(0.66,0.8), S(0.665,0.9), S(0.668,1), S(0.665,1.1), S(0.66,1.2)], ["frontoclypeal-suture","cranium"]);
+}
+
+/* antennae: 13 shapes in the order of slide 11; each is scape + pedicel + flagellum */
+const ANT = {
+  filiform:  {n:1,  th:"เส้นด้าย",  en:"Filiform",   ref:"12", t:"annuli ของ flagellum มีขนาดเท่าๆ กัน เรียงต่อกันเป็นแถว", ex:"ตั๊กแตน จิ้งหรีด ด้วงหนวดยาว"},
+  serrate:   {n:2,  th:"ฟันเลื่อย", en:"Serrate",    ref:"13", t:"annuli เป็นแผ่นรูปสามเหลี่ยม เรียงต่อกันเป็นแถวยาวคล้ายฟันเลื่อย", ex:"แมลงทับ ด้วงดีด"},
+  moniliform:{n:3,  th:"ลูกปัด",   en:"Moniliform", ref:"14", t:"annuli รูปร่างกลม เรียงต่อกันเป็นสายคล้ายลูกปัด", ex:"ปลวก"},
+  clavate:   {n:4,  th:"กระบอง",   en:"Clavate",    ref:"15", t:"annuli ค่อยๆ ใหญ่ขึ้นเมื่อเข้าใกล้ปลายหนวด ทำให้มีรูปร่างคล้ายกระบอง", ex:"ผีเสื้อกลางวัน"},
+  capitate:  {n:5,  th:"ลูกตุ้ม",   en:"Capitate",   ref:"16", t:"annuli ขนาดไล่เลี่ยกัน ยกเว้น 3 ปล้องสุดท้ายที่ใหญ่เป็นพิเศษ", ex:"แมลงเหนี่ยง"},
+  setaceous: {n:6,  th:"เส้นขน",   en:"Setaceous",  ref:"17", t:"scape และ pedicel มีขนาดใหญ่ ส่วน annuli ของ flagellum เรียวเล็กลงไปทางปลายหนวด", ex:"แมลงปอ จักจั่น"},
+  flabellate:{n:7,  th:"ใบไผ่",    en:"Flabellate", ref:"18", t:"annuli เจริญแผ่ออกทางด้านข้างเป็นแผ่นยาว ลักษณะคล้ายใบไผ่", ex:"ด้วงสีดาเพศผู้"},
+  lamellate: {n:8,  th:"ใบไม้",    en:"Lamellate",  ref:"19", t:"annuli ที่บริเวณปลายหนวดแผ่ออกเป็นแผ่นแบนและอัดกันแน่น ลักษณะคล้ายใบไม้", ex:"ด้วงแรด"},
+  geniculate:{n:9,  th:"ข้อศอก",   en:"Geniculate", ref:"20", t:"scape ยาวมาก และระหว่าง scape กับ pedicel หักงอลงเป็นมุม ดูคล้ายข้อศอก", ex:"มด ผึ้ง"},
+  stylate:   {n:10, th:"เคียว",    en:"Stylate",    ref:"21", t:"flagellum โค้งงอเป็นรูปเคียว", ex:"เหลือบ"},
+  pectinate: {n:11, th:"ฟันหวี",   en:"Pectinate",  ref:"22", t:"flagellum มีเส้นขนแข็งๆ ยื่นออกมาเป็นแผงคล้ายซี่หวี", ex:"ผีเสื้อยักษ์"},
+  plumose:   {n:12, th:"พู่ขนนก",  en:"Plumose",    ref:"23", t:"annuli แต่ละปล้องมีเส้นขนเล็กๆ ยื่นออกมาทุกทิศทาง", ex:"ยุงเพศผู้"},
+  aristate:  {n:13, th:"ขนอะริสตา", en:"Aristate",   ref:"24", t:"flagellum เป็นปล้องใหญ่ปล้องเดียว และมีเส้นขน arista ติดอยู่ 1 เส้น", ex:"แมลงวัน"}
+};
+let antMeshes = [], antType = "filiform";
+const hairGeo = new THREE.CylinderGeometry(1, 1, 1, 5); hairGeo.translate(0, 0.5, 0);
+function buildAntennae(type){
+  const gone = new Set(antMeshes);
+  for (const m of antMeshes){ root.remove(m); if (m.geometry !== hairGeo) m.geometry.dispose(); }
+  for (let i=pickables.length-1;i>=0;i--) if (gone.has(pickables[i])) pickables.splice(i,1);
+  for (let i=movers.length-1;i>=0;i--) if (gone.has(movers[i])) movers.splice(i,1);
+  antMeshes = [];
+  const mats = {}; const M = c => mats[c] || (mats[c] = makeMat(c));
+  for (const s of [1,-1]) buildOneAntenna(type, s, M);
+}
+function buildOneAntenna(type, s, M){
+  const A = H.clone().add(V(0.5,0.42,s*0.15));
+  const P = (x,y,z) => A.clone().add(V(x,y,s*z));
+  const cr = pts => new THREE.CatmullRomCurve3(pts);
+  const DEF = [P(0,0,0),P(0.3,0.22,0.1),P(0.62,0.52,0.3),P(0.85,0.95,0.55),P(0.95,1.4,0.8)];
+  let path = cr(DEF), fs = 0.07, fp = 0.115, N = 18, scR = [0.075,0.068], peR = [0.058,0.054];
+  switch (type){
+    case "moniliform": N = 13; break;
+    case "clavate": N = 13; break;
+    case "serrate": N = 13; break;
+    case "pectinate": N = 15; break;
+    case "plumose": N = 14; break;
+    case "flabellate": N = 9; break;
+    case "capitate": path = cr(DEF.map(p => p.clone().sub(A).multiplyScalar(0.75).add(A))); fs = 0.09; fp = 0.15; N = 11; break;
+    case "setaceous": path = cr([P(0,0,0),P(0.22,0.2,0.08),P(0.42,0.45,0.2),P(0.55,0.72,0.32)]); fs = 0.18; fp = 0.32; N = 9; scR = [0.1,0.092]; peR = [0.085,0.075]; break;
+    case "lamellate": path = cr([P(0,0,0),P(0.25,0.12,0.1),P(0.5,0.22,0.25),P(0.66,0.26,0.36)]); fs = 0.22; fp = 0.33; N = 7; break;
+    case "stylate": path = cr([P(0,0,0),P(0.25,0.2,0.08),P(0.52,0.26,0.2),P(0.72,0.12,0.3),P(0.8,-0.12,0.34)]); fs = 0.12; fp = 0.22; N = 5; scR = [0.07,0.065]; peR = [0.062,0.06]; break;
+    case "aristate": path = cr([P(0,0,0),P(0.08,-0.05,0.03),P(0.15,-0.14,0.05),P(0.2,-0.34,0.07)]); fs = 0.2; fp = 0.45; N = 1; scR = [0.05,0.05]; peR = [0.07,0.075]; break;
+    case "geniculate": {
+      const E = P(0.22,0.72,0.18);
+      path = new THREE.CurvePath();
+      path.add(new THREE.LineCurve3(P(0,0,0), E));
+      path.add(cr([E, P(0.55,0.86,0.36), P(0.9,0.8,0.52), P(1.18,0.6,0.64)]));
+      const ls = path.getCurveLengths(); fs = ls[0]/ls[1]*0.98; fp = fs + 0.06; N = 10; scR = [0.06,0.055]; peR = [0.05,0.048];
+      break;
+    }
+  }
+  const at = t => path.getPointAt(Math.min(1, Math.max(0, t)));
+  const base = headEx.clone().add(V(0.5,0.9,s*0.9));
+  const dir0 = path.getTangentAt(Math.min(0.1, fs*0.5)).normalize();
+  const exS = base, exP = base.clone().addScaledVector(dir0, 0.25), exF = base.clone().addScaledVector(dir0, 0.5);
+  const add = (mesh, tags, ex) => { reg(mesh, tags, ex); antMeshes.push(mesh); return mesh; };
+  const segM = (a, b, r0, r1, mat) => { const d = b.clone().sub(a); const m = new THREE.Mesh(capsuleGeo(d.length(), r0, r1, 0), mat); m.position.copy(a); m.quaternion.setFromUnitVectors(UP, d.normalize()); return m; };
+  const ball = (p, r, mat) => { const m = new THREE.Mesh(new THREE.SphereGeometry(r, 18, 14), mat); m.position.copy(p); return m; };
+  const hair = (p, dir, len, r, mat) => { const m = new THREE.Mesh(hairGeo, mat); m.position.copy(p); m.scale.set(r, len, r); m.quaternion.setFromUnitVectors(UP, dir.clone().normalize()); return m; };
+  const plate = (shape, depth, origin, xAx, yAx, mat) => {
+    const g = new THREE.ExtrudeGeometry(shape, {depth, bevelEnabled:false, curveSegments:12}); g.translate(0, 0, -depth/2);
+    const m = new THREE.Mesh(g, mat); m.quaternion.copy(basisQuat(xAx, yAx)); m.position.copy(origin); return m;
+  };
+  const C = {scape:M("#b8862a"), ped:M("#e5b84f"), f1:M("#d9a43a"), f2:M("#cf9a33"), x:M("#ebc25e")};
+  const FT = ["flagellum","antenna"];
+
+  add(segM(at(0), at(fs), scR[0], scR[1], C.scape), ["scape","antenna"], exS);
+  add(segM(at(fs+0.004), at(fp-0.004), peR[0], peR[1], C.ped), ["pedicel","antenna"], exP);
+
+  for (let i=0;i<N;i++){
+    const t0 = fp + (1-fp)*i/N, t1 = fp + (1-fp)*(i+0.88)/N;
+    const a = at(t0), b = at(t1), d = b.clone().sub(a).normalize(), L = a.distanceTo(b);
+    const mid = a.clone().lerp(b, 0.5);
+    const lat = new THREE.Vector3().crossVectors(d, UP); if (lat.lengthSq() < 1e-4) lat.set(0,0,1);
+    lat.normalize(); if (lat.z*s < 0) lat.negate();
+    const upv = new THREE.Vector3().crossVectors(lat, d).normalize(); if (upv.y < 0) upv.negate();
+    const u = N > 1 ? i/(N-1) : 0, col = i%2 ? C.f1 : C.f2;
+    switch (type){
+      case "moniliform": add(ball(mid, 0.058, col), FT, exF); break;
+      case "clavate": { const r = 0.03 + 0.075*Math.pow(u, 2.2); add(segM(a, b, r*0.85, r, col), FT, exF); break; }
+      case "capitate":
+        if (i < N-3) add(segM(a, b, 0.038, 0.036, col), FT, exF);
+        else add(ball(mid, 0.1 + 0.012*(i-(N-3)), col), FT, exF);
+        break;
+      case "setaceous": { const r = 0.034*(1-u) + 0.006; add(segM(a, b, r, r*0.85, col), FT, exF); break; }
+      case "serrate": {
+        add(segM(a, b, 0.04*(1-0.3*u), 0.038*(1-0.3*u), col), FT, exF);
+        const h = 0.17*(1-0.4*u), sh = new THREE.Shape();
+        sh.moveTo(-L*0.55, 0); sh.lineTo(L*0.55, 0); sh.lineTo(L*0.5, h); sh.closePath();
+        add(plate(sh, 0.03, mid, d, lat, col), FT, exF);
+        break;
+      }
+      case "flabellate": {
+        add(segM(a, b, 0.036, 0.034, col), FT, exF);
+        if (i > 0){
+          const h = 0.5*(1-0.45*u) + 0.1, sh = new THREE.Shape();
+          sh.moveTo(-L*0.45, 0);
+          sh.splineThru([new THREE.Vector2(-L*0.25, h*0.6), new THREE.Vector2(L*0.05, h), new THREE.Vector2(L*0.35, h*0.62), new THREE.Vector2(L*0.45, 0)]);
+          add(plate(sh, 0.022, mid, d, lat.clone().addScaledVector(d, 0.15).normalize(), C.x), FT, exF);
+        }
+        break;
+      }
+      case "lamellate":
+        if (i < N-3) add(segM(a, b, 0.042, 0.04, col), FT, exF);
+        else { const sh = new THREE.Shape(); sh.absellipse(0.17, 0, 0.24, 0.1, 0, Math.PI*2, false, 0);
+               add(plate(sh, 0.036, mid, lat, upv, i%2 ? C.f1 : C.x), FT, exF); }
+        break;
+      case "geniculate": { const r = 0.042 + 0.02*u; add(segM(a, b, r*0.92, r, col), FT, exF); break; }
+      case "stylate":
+        if (i < N-1) add(segM(a, b, 0.058*(1-0.35*u), 0.052*(1-0.35*u), col), FT, exF);
+        else add(segM(a, at(1), 0.035, 0.002, col), FT, exF);
+        break;
+      case "pectinate": {
+        add(segM(a, b, 0.035, 0.033, col), FT, exF);
+        const h = 0.34*(1-0.55*u);
+        for (const sg of [1,-1]) add(hair(mid, lat.clone().addScaledVector(upv, 0.55*sg).addScaledVector(d, 0.35), h, 0.012, C.x), FT, exF);
+        break;
+      }
+      case "plumose": {
+        add(segM(a, b, 0.028, 0.026, col), FT, exF);
+        const h = 0.3*(1-0.4*u);
+        for (let k=0;k<8;k++){
+          const th = 2*Math.PI*k/8 + i*0.4;
+          add(hair(mid, lat.clone().multiplyScalar(Math.cos(th)).addScaledVector(upv, Math.sin(th)).addScaledVector(d, 0.35), h, 0.006, C.x), FT, exF);
+        }
+        break;
+      }
+      case "aristate": {
+        const end = at(1), seg3 = end.clone().sub(at(fp)), c = at(fp).clone().lerp(end, 0.5);
+        const fl = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 18), col);
+        fl.scale.set(0.09, seg3.length()*0.58, 0.09); fl.position.copy(c); fl.quaternion.setFromUnitVectors(UP, seg3.clone().normalize());
+        add(fl, FT, exF);
+        const p0 = at(fp).clone().addScaledVector(d, 0.07).addScaledVector(lat, 0.07);
+        const ad = lat.clone().multiplyScalar(0.8).addScaledVector(d, 0.25).addScaledVector(upv, 0.35).normalize();
+        const p1 = p0.clone().addScaledVector(ad, 0.55);
+        add(segM(p0, p1, 0.013, 0.004, C.x), FT, exF);
+        const side = new THREE.Vector3().crossVectors(ad, lat).normalize();
+        for (let k=1;k<=9;k++){
+          const q = p0.clone().lerp(p1, 0.15 + 0.08*k);
+          for (const sg of [1,-1]) add(hair(q, side.clone().multiplyScalar(sg).addScaledVector(ad, 0.4), 0.07*(1-k/12), 0.004, C.x), FT, exF);
+        }
+        break;
+      }
+      default: { const r = 0.046 - 0.016*u; add(segM(a, b, r, r*0.94, col), FT, exF); }
+    }
+  }
+}
+buildAntennae(antType);
+
+/* ---------------- mouthparts: 7 types (slides 29–35) ----------------
+   Each modified structure keeps the colour of the chewing-type part it is derived from. */
+const MOUTHTYPES = {
+  chewing:  {n:1, th:"ปากแบบกัดกิน",   en:"Chewing type",          ref:"26, 29", sel:"mandible",
+    t:"มีส่วนประกอบครบทั้ง labrum, mandibles, maxillae, labium และ hypopharynx กรามแข็งแรงใช้กัดและบดอาหาร", ex:"ตั๊กแตน แมลงสาบ ด้วง หนอนผีเสื้อ"},
+  piercing: {n:2, th:"ปากแบบเจาะดูด",  en:"Piercing-sucking type", ref:"30", sel:"stylet",
+    t:"labium ยืดยาวเป็นปลอกรูปงวง (rostrum) หุ้มเข็มเจาะ (stylets) 4 เส้น ซึ่งเปลี่ยนมาจาก mandibles 1 คู่ และ maxillae 1 คู่ ใช้เจาะเนื้อเยื่อพืชหรือผิวหนังสัตว์แล้วดูดของเหลว", ex:"ยุง มวน เพลี้ย หมัด แมลงวันคอกสัตว์"},
+  rasping:  {n:3, th:"ปากแบบเขี่ยดูด", en:"Rasping-sucking type",  ref:"31", sel:"mouth-cone",
+    t:"ปากเป็นกรวยสั้น (mouth cone) หุ้ม stylet ไว้ภายใน ก่อนกินจะใช้ปากเขี่ยให้เนื้อเยื่อของพืชช้ำ แล้วจึงใช้ stylet ดูดอาหาร มี mandible เพียงข้างซ้ายข้างเดียว", ex:"เพลี้ยไฟ (Thysanoptera)"},
+  siphoning:{n:4, th:"ปากแบบดูดกิน",   en:"Siphoning type",        ref:"32", sel:"proboscis",
+    t:"galea ของ maxillae ทั้งสองข้างยืดยาวประกบกันเป็นงวงกลวง (proboscis) ม้วนเป็นวงใต้หัวเมื่อไม่ใช้ และคลายออกเพื่อดูดน้ำหวาน ไม่มี mandibles", ex:"ผีเสื้อ"},
+  sponging: {n:5, th:"ปากแบบซับดูด",   en:"Sponging type",         ref:"33", sel:"labellum",
+    t:"labium เปลี่ยนเป็นงวงอ่อน ปลายเป็นแผ่นนุ่ม 2 แผ่น (labellum) ที่มีร่องเล็กๆ จำนวนมาก ใช้ซับอาหารที่เป็นของเหลว ไม่มี mandibles จึงเจาะหรือกัดไม่ได้", ex:"แมลงวัน"},
+  lapping:  {n:6, th:"ปากแบบกัด-เลีย", en:"Chewing-lapping type",  ref:"34", sel:"glossa",
+    t:"mandibles ยังใช้กัดได้ เช่น ปั้นขี้ผึ้ง ส่วน maxillae และ labium ยืดยาว labium มีลิ้นยาวที่มีขน (glossa) ใช้เลียน้ำหวาน", ex:"ผึ้ง"},
+  cutting:  {n:7, th:"ปากแบบกัด-ซับดูด", en:"Cutting-sponging type", ref:"35", sel:"mandible",
+    t:"mandibles และ maxillae เป็นใบมีดสั้นและคม ใช้ตัดผิวหนังให้เลือดออก แล้วใช้ labellum ของ labium ซับเลือด", ex:"เหลือบ"},
+  mask:     {n:8, th:"ปากแบบหน้ากาก", en:"Mask (prehensile labium)", ref:null, src:G2, sel:"labial-mask", extra:true,
+    t:"เป็นปากแบบกัดกิน แต่ labium ยืดยาวมาก มีข้อพับอยู่ระหว่าง postmentum กับ prementum ขณะพักจะพับเก็บไว้ใต้หัว คลุมปากส่วนอื่นไว้คล้ายหน้ากาก เมื่อเหยื่อเข้ามาใกล้จะดีดออกไปข้างหน้าอย่างรวดเร็ว แล้วใช้ labial palps ที่เปลี่ยนเป็นตะขอ 1 คู่หนีบเหยื่อกลับมาให้ mandibles กัดกิน", ex:"ตัวอ่อน (naiad) ของแมลงปอและแมลงปอเข็ม (Odonata)"}
+};
+const MC = {labrum:"#e5b15a", mandible:"#8f3b2c", maxilla:"#3fa889", mpalp:"#63c4a6", labium:"#8e6bd0", lpalp:"#b598e6", hyp:"#d98aa0", labellum:"#a98be0", groove:"#4b3590"};
+let mouthMeshes = [], mouthType = "chewing";
+function buildMouth(type){
+  const gone = new Set(mouthMeshes);
+  for (const m of mouthMeshes){ root.remove(m); if (m.geometry !== hairGeo) m.geometry.dispose(); }
+  for (let i=pickables.length-1;i>=0;i--) if (gone.has(pickables[i])) pickables.splice(i,1);
+  for (let i=movers.length-1;i>=0;i--) if (gone.has(movers[i])) movers.splice(i,1);
+  mouthMeshes = [];
+  const mats = {}; const M = (c, tags) => { const k = c + tags.join(); return mats[k] || (mats[k] = makeMat(c)); };
+  const add = (mesh, tags, ex) => { reg(mesh, tags, ex); mouthMeshes.push(mesh); return mesh; };
+  const E = (x,y,z) => headEx.clone().add(V(x,y,z));
+  const at = (x,y,z) => H.clone().add(V(x,y,z));
+  const ellM = (sx,sy,sz,c,pos,tags,rz,rx) => { const m = new THREE.Mesh(new THREE.SphereGeometry(1,28,18), M(c,tags)); m.scale.set(sx,sy,sz); m.position.copy(pos); if (rz) m.rotation.z = rz; if (rx) m.rotation.x = rx; return m; };
+  const segL = (a,b,r0,r1,c,tags) => { const d = b.clone().sub(a); const m = new THREE.Mesh(capsuleGeo(d.length(), r0, r1, 0), M(c,tags)); m.position.copy(a); m.quaternion.setFromUnitVectors(UP, d.normalize()); return m; };
+  const chainM = (pts, r0, r1, c, tags, ex, gap) => { for (let i=0;i<pts.length-1;i++){ const b = pts[i+1].clone().lerp(pts[i], gap||0.08); const k = i/(pts.length-1); add(segL(pts[i], b, r0+(r1-r0)*k, r0+(r1-r0)*(k+1/(pts.length-1)), c, tags), tags, ex); } };
+  const tubeM = (pts, r, c, tags) => new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 160, r, 8, false), M(c,tags));
+  const hairM = (p, dir, len, r, c, tags) => { const h = new THREE.Mesh(hairGeo, M(c,tags)); h.position.copy(p); h.scale.set(r,len,r); h.quaternion.setFromUnitVectors(UP, dir.clone().normalize()); return h; };
+  const T = {lr:["labrum"], md:["mandible"], mx:["maxilla"], mp:["maxillary-palp"], lb:["labium"], lp:["labial-palp"], hp:["hypopharynx"]};
+  const pads = (y, sx, sy, sz, lines) => { // labellum: two soft lobes with pseudotracheal grooves
+    const LT = ["labellum","labium"];
+    for (const s of [1,-1]){
+      const c = at(0.24, y, s*sz*0.85);
+      add(ellM(sx, sy, sz, MC.labellum, c, LT), LT, E(-0.3,-1.5,s*0.45));
+      for (let k=0;k<lines;k++){
+        const a = -1.1 + 2.2*k/(lines-1), d = V(Math.cos(a), 0, s*Math.sin(a)*0.7 + s*0.3);
+        add(hairM(c.clone().add(V(0,-sy*0.8,0)), d, sx*0.95, 0.006, MC.groove, LT), LT, E(-0.3,-1.5,s*0.45));
+      }
+    }
+  };
+
+  if (type === "mask"){
+    /* odonate naiad: ordinary chewing parts plus a long hinged labium shown in the extended (strike) pose */
+    add(ellM(0.07,0.2,0.24,MC.labrum,at(0.47,-0.6,0),T.lr), T.lr, E(1.1,-0.5,0));
+    add(ellM(0.09,0.1,0.09,MC.hyp,at(0.25,-0.8,0),T.hp), T.hp, E(1.3,-1.55,0));
+    for (const s of [1,-1]){
+      add(ellM(0.15,0.2,0.12,MC.mandible,at(0.36,-0.72,s*0.17),T.md,0.3), T.md, E(0.75,-1.0,s*0.95));
+      add(ellM(0.07,0.13,0.065,MC.maxilla,at(0.2,-0.82,s*0.27),T.mx), T.mx, E(0.3,-1.45,s*1.45));
+      chainM([at(0.24,-0.92,s*0.3), at(0.3,-1.0,s*0.33), at(0.36,-1.04,s*0.34)], 0.03, 0.026, MC.mpalp, T.mp, E(0.55,-1.7,s*1.5), 0.1);
+    }
+    const lbEx = E(-0.1,-1.9,0), MK = "labial-mask";
+    const PM = ["postmentum","labium",MK], PR = ["prementum","labium",MK], LO = ["labial-palp","labium",MK], HK = ["palpal-hook","labial-palp","labium",MK];
+    const hinge = at(0.05,-0.88,0), elbow = at(0.1,-1.62,0), tip = at(1.05,-1.5,0);
+    const pm = add(segL(hinge, elbow, 0.07, 0.075, "#6a4cb0", PM), PM, lbEx); pm.scale.set(0.7, 1, 1.7);
+    add(ellM(0.07,0.07,0.1,"#4d3590",elbow,PM), PM, lbEx);
+    const pr = add(segL(elbow, tip, 0.075, 0.1, MC.labium, PR), PR, lbEx); pr.scale.set(0.6, 1, 2.0);
+    for (const s of [1,-1]){
+      const lc = at(1.16,-1.5,s*0.12);
+      add(ellM(0.13,0.045,0.075,MC.lpalp,lc,LO,0,0), LO, lbEx);
+      for (let k=0;k<4;k++) add(segL(lc.clone().add(V(-0.06+0.05*k,0,-s*0.05)), lc.clone().add(V(-0.03+0.05*k,0.01,-s*0.1)), 0.012, 0.003, "#5a3f9a", LO), LO, lbEx);
+      const h0 = at(1.25,-1.5,s*0.16), h1 = at(1.36,-1.48,s*0.12), h2 = at(1.4,-1.47,s*0.03);
+      add(segL(h0, h1, 0.024, 0.018, "#3a2470", HK), HK, lbEx);
+      add(segL(h1, h2, 0.018, 0.004, "#3a2470", HK), HK, lbEx);
+    }
+  }
+  else if (type === "chewing"){
+    add(ellM(0.07,0.2,0.24,MC.labrum,at(0.47,-0.6,0),T.lr), T.lr, E(1.1,-0.5,0));
+    add(ellM(0.09,0.1,0.09,MC.hyp,at(0.25,-0.8,0),T.hp), T.hp, E(1.3,-1.55,0));
+    // labium = postmentum + prementum, which carries glossae, paraglossae and labial palps
+    const lbEx = E(-0.25,-2.0,0), PM = ["postmentum","labium"], PR = ["prementum","labium"], GL = ["glossa","labium"], PG = ["paraglossa","labium"];
+    add(ellM(0.08,0.06,0.2,"#7454b8",at(-0.03,-0.86,0),PM), PM, lbEx.clone().add(V(-0.1,0.25,0)));
+    add(ellM(0.09,0.07,0.23,MC.labium,at(0.03,-0.97,0),PR), PR, lbEx);
+    for (const s of [1,-1]){
+      add(ellM(0.045,0.06,0.04,"#b08ae8",at(0.1,-1.05,s*0.045),GL), GL, lbEx.clone().add(V(0.15,-0.3,s*0.1)));
+      add(ellM(0.045,0.065,0.05,"#cdb3f2",at(0.08,-1.05,s*0.13),PG), PG, lbEx.clone().add(V(0.1,-0.3,s*0.35)));
+    }
+    for (const s of [1,-1]){
+      add(ellM(0.15,0.2,0.12,MC.mandible,at(0.36,-0.72,s*0.17),T.md,0.3), T.md, E(0.75,-1.0,s*0.95));
+      const mxEx = E(0.3,-1.45,s*1.45);
+      // maxilla = cardo + stipes, which carries lacinia (inner), galea (outer) and the palp
+      const CD = ["cardo","maxilla"], SP = ["stipes","maxilla"], LC = ["lacinia","maxilla"], GA = ["galea","maxilla"];
+      add(ellM(0.055,0.07,0.055,"#2b8068",at(0.15,-0.66,s*0.27),CD,-0.3), CD, mxEx.clone().add(V(-0.15,0.3,0)));
+      add(ellM(0.07,0.12,0.065,MC.maxilla,at(0.18,-0.8,s*0.27),SP), SP, mxEx);
+      add(segL(at(0.2,-0.88,s*0.21), at(0.27,-1.08,s*0.16), 0.034, 0.01, "#1d6b55", LC), LC, mxEx.clone().add(V(0.2,-0.2,-s*0.25)));
+      add(ellM(0.05,0.09,0.05,"#86d6bc",at(0.15,-0.99,s*0.29),GA), GA, mxEx.clone().add(V(-0.15,-0.25,s*0.2)));
+      const P0 = at(0.22,-0.95,s*0.3);
+      chainM([V(0,0,0),V(0.05,-0.12,0.04),V(0.1,-0.24,0.06),V(0.18,-0.33,0.07),V(0.26,-0.38,0.07),V(0.34,-0.40,0.07)].map(p => P0.clone().add(V(p.x,p.y,s*p.z))),
+        0.036, 0.032, MC.mpalp, T.mp, mxEx.clone().add(V(0.25,-0.25,s*0.25)), 0.1);
+      const L0 = at(0.06,-1.0,s*0.2);
+      chainM([V(0,0,0),V(0.06,-0.1,0.03),V(0.12,-0.18,0.05),V(0.2,-0.22,0.05)].map(p => L0.clone().add(V(p.x,p.y,s*p.z))),
+        0.035, 0.031, MC.lpalp, T.lp, E(-0.05,-2.25,s*0.35), 0.1);
+    }
+  }
+  else if (type === "piercing"){
+    const R = [at(0.25,-0.74,0)]; for (const d of [V(-0.03,-0.24,0),V(-0.05,-0.24,0),V(-0.06,-0.22,0),V(-0.06,-0.18,0)]) R.push(R[R.length-1].clone().add(d));
+    const RT = ["rostrum","labium"];
+    for (let i=0;i<4;i++) add(segL(R[i], R[i+1].clone().lerp(R[i],0.04), 0.075-0.007*i, 0.07-0.007*i, MC.labium, RT), RT, E(-0.9,-0.7,0));
+    const tip = R[4].clone().add(V(-0.03,-0.13,0));
+    const sty = (z, c, tags, ex) => add(tubeM(R.map(p => p.clone().add(V(0.012,0,z))).concat([tip.clone().add(V(0,0,z*0.3))]), 0.011, c, tags), tags, ex);
+    for (const s of [1,-1]){
+      sty(s*0.03, MC.mandible, ["stylet","mandible"], E(0.95,-0.45,s*0.75));
+      sty(s*0.012, MC.maxilla, ["stylet","maxilla"], E(0.55,-0.6,s*0.35));
+    }
+    add(ellM(0.05,0.13,0.08,MC.labrum,at(0.37,-0.72,0),T.lr), T.lr, E(1.1,-0.4,0));
+    add(ellM(0.05,0.06,0.05,MC.hyp,at(0.27,-0.7,0),T.hp), T.hp, E(1.3,-1.2,0));
+  }
+  else if (type === "rasping"){
+    const dir = V(-0.35,-1,0).normalize(), base = at(0.27,-0.72,0), CT = ["mouth-cone","labium"];
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.5, 24), M(MC.labium, CT));
+    cone.position.copy(base).addScaledVector(dir, 0.25); cone.quaternion.setFromUnitVectors(UP, dir);
+    add(cone, CT, E(-0.7,-1.1,0));
+    add(ellM(0.05,0.2,0.13,MC.labrum,base.clone().add(V(0.1,-0.17,0)),T.lr,-0.33), T.lr, E(1.0,-0.6,0));
+    const tipP = base.clone().addScaledVector(dir, 0.56);
+    const st = (z, c, tags, ex) => add(segL(base.clone().add(V(0,0.04,z)), tipP.clone().add(V(0,0,z*0.4)), 0.014, 0.006, c, tags), tags, ex);
+    st(-0.04, MC.mandible, ["stylet","mandible"], E(0.9,-0.6,-0.7)); // left mandible only
+    for (const s of [1,-1]){
+      st(s*0.018, MC.maxilla, ["stylet","lacinia","maxilla"], E(0.55,-0.8,s*0.4));
+      chainM([at(0.24,-0.8,s*0.18), at(0.33,-0.9,s*0.24), at(0.4,-1.0,s*0.27)], 0.03, 0.026, MC.mpalp, T.mp, E(0.4,-1.0,s*1.0), 0.1);
+      chainM([at(0.1,-0.95,s*0.14), at(0.13,-1.05,s*0.18), at(0.16,-1.13,s*0.2)], 0.028, 0.024, MC.lpalp, T.lp, E(-0.4,-1.6,s*0.5), 0.1);
+    }
+  }
+  else if (type === "siphoning"){
+    const C0 = at(0.42,-1.08,0), turns = 4.6*Math.PI, PT = ["proboscis","galea","maxilla"];
+    for (const s of [1,-1]){
+      const pts = [at(0.3,-0.72,s*0.022)];
+      for (let k=0;k<=140;k++){ const th = turns*k/140, r = 0.3*(1 - 0.82*k/140); pts.push(C0.clone().add(V(r*Math.sin(th), r*Math.cos(th), s*0.022))); }
+      add(tubeM(pts, 0.022, MC.maxilla, PT), PT, E(1.2,-1.2,s*0.3));
+      chainM([at(0.2,-0.78,s*0.13), at(0.32,-0.73,s*0.16), at(0.46,-0.53,s*0.18), at(0.52,-0.28,s*0.19)], 0.055, 0.04, MC.lpalp, T.lp, E(0.2,-1.6,s*0.8), 0.06);
+    }
+    add(ellM(0.04,0.06,0.1,MC.labrum,at(0.46,-0.62,0),T.lr), T.lr, E(1.1,-0.4,0));
+    add(ellM(0.08,0.06,0.15,MC.labium,at(0.14,-0.82,0),T.lb), T.lb, E(-0.25,-1.6,0));
+  }
+  else if (type === "sponging"){
+    add(segL(at(0.25,-0.72,0), at(0.22,-1.22,0), 0.11, 0.09, MC.labium, T.lb), T.lb, E(-0.3,-1.2,0));
+    pads(-1.27, 0.2, 0.07, 0.13, 7);
+    add(segL(at(0.34,-0.7,0), at(0.31,-1.15,0), 0.03, 0.012, MC.labrum, T.lr), T.lr, E(1.0,-0.8,0));
+    add(segL(at(0.3,-0.72,0), at(0.28,-1.08,0), 0.018, 0.008, MC.hyp, T.hp), T.hp, E(1.3,-1.4,0));
+    for (const s of [1,-1]) add(segL(at(0.34,-0.7,s*0.14), at(0.52,-0.84,s*0.2), 0.03, 0.05, MC.mpalp, T.mp), T.mp, E(0.6,-1.0,s*0.9));
+  }
+  else if (type === "lapping"){
+    add(ellM(0.06,0.12,0.2,MC.labrum,at(0.47,-0.62,0),T.lr), T.lr, E(1.1,-0.5,0));
+    add(ellM(0.08,0.15,0.12,MC.labium,at(0.2,-0.85,0),T.lb), T.lb, E(-0.4,-1.1,0));
+    const GT = ["glossa","labium"], g = new THREE.CatmullRomCurve3([at(0.22,-0.95,0), at(0.18,-1.15,0), at(0.1,-1.4,0), at(0.0,-1.62,0)]);
+    for (let k=0;k<14;k++){ const a = g.getPointAt(k/14), b = g.getPointAt((k+0.85)/14), r = 0.045 - 0.018*k/14; add(segL(a, b, r, r*0.92, MC.labium, GT), GT, E(-0.4,-1.1,0)); }
+    add(ellM(0.06,0.02,0.06,MC.labellum,g.getPointAt(1).add(V(0,-0.02,0)),GT), GT, E(-0.4,-1.1,0));
+    add(ellM(0.05,0.05,0.05,MC.hyp,at(0.3,-0.78,0),T.hp), T.hp, E(1.3,-1.4,0));
+    for (const s of [1,-1]){
+      add(ellM(0.1,0.24,0.09,MC.mandible,at(0.38,-0.78,s*0.2),T.md,0.2), T.md, E(0.75,-1.0,s*0.95));
+      add(segL(at(0.27,-0.88,s*0.09), at(0.16,-1.42,s*0.1), 0.045, 0.015, MC.maxilla, T.mx), T.mx, E(0.3,-1.2,s*1.0));
+      add(segL(at(0.3,-0.9,s*0.14), at(0.36,-0.96,s*0.16), 0.02, 0.016, MC.mpalp, T.mp), T.mp, E(0.4,-1.0,s*1.2));
+      chainM([at(0.2,-0.92,s*0.05), at(0.17,-1.1,s*0.06), at(0.12,-1.3,s*0.07), at(0.08,-1.42,s*0.07), at(0.05,-1.52,s*0.07)], 0.026, 0.02, MC.lpalp, T.lp, E(-0.05,-1.6,s*0.6), 0.06);
+    }
+  }
+  else if (type === "cutting"){
+    add(segL(at(0.25,-0.72,0), at(0.21,-1.12,0), 0.12, 0.11, MC.labium, T.lb), T.lb, E(-0.3,-1.2,0));
+    pads(-1.17, 0.15, 0.06, 0.11, 5);
+    add(ellM(0.05,0.22,0.06,MC.labrum,at(0.42,-0.9,0),T.lr), T.lr, E(1.1,-0.7,0));
+    add(ellM(0.025,0.2,0.04,MC.hyp,at(0.33,-0.92,0),T.hp), T.hp, E(1.3,-1.3,0));
+    for (const s of [1,-1]){
+      add(ellM(0.07,0.22,0.015,MC.mandible,at(0.38,-0.92,s*0.06),T.md), T.md, E(0.9,-0.9,s*0.8));
+      add(ellM(0.04,0.22,0.015,MC.maxilla,at(0.34,-0.95,s*0.1),T.mx), T.mx, E(0.5,-1.1,s*1.2));
+      chainM([at(0.36,-0.7,s*0.15), at(0.51,-0.75,s*0.21), at(0.62,-1.02,s*0.25)], 0.05, 0.035, MC.mpalp, T.mp, E(0.6,-0.8,s*1.0), 0.05);
+    }
+  }
+}
+buildMouth(mouthType);
+
+/* ---------------- thorax: tergum / pleuron / sternum per segment ---------------- */
+const THX = [
+  {id:"prothorax",  x:1.15, sx:0.42, r:0.55, ex:V(0.75,0,0)},
+  {id:"mesothorax", x:0.42, sx:0.40, r:0.56, ex:V(0,0,0)},
+  {id:"metathorax", x:-0.3, sx:0.45, r:0.58, ex:V(-0.75,0,0)}
+];
+const TY = 0.05;
+function band(t0,t1,nu,nv){ return new THREE.SphereGeometry(1, nu||40, nv||14, 0, Math.PI*2, t0*Math.PI, (t1-t0)*Math.PI); }
+/* split a geometry in two by testing each triangle's centroid (unit-sphere coordinates) */
+function splitGeo(geo, test){
+  const g = geo.index ? geo.toNonIndexed() : geo, pos = g.attributes.position, names = Object.keys(g.attributes);
+  const out = [{}, {}]; for (const o of out) for (const n of names) o[n] = [];
+  for (let t=0; t<pos.count; t+=3){
+    const cx = (pos.getX(t)+pos.getX(t+1)+pos.getX(t+2))/3, cy = (pos.getY(t)+pos.getY(t+1)+pos.getY(t+2))/3, cz = (pos.getZ(t)+pos.getZ(t+1)+pos.getZ(t+2))/3;
+    const o = out[test(cx, cy, cz) ? 0 : 1];
+    for (const n of names){ const a = g.attributes[n]; for (let v=t; v<t+3; v++) for (let k=0;k<a.itemSize;k++) o[n].push(a.array[v*a.itemSize+k]); }
+  }
+  return out.map(o => { const b = new THREE.BufferGeometry(); for (const n of names) b.setAttribute(n, new THREE.Float32BufferAttribute(o[n], g.attributes[n].itemSize)); return b; });
+}
+/* points where a plane n·v = 0 cuts the unit sphere, kept inside a y-range on one side (z sign) */
+function sphereCut(n, y0, y1, s){
+  n = n.clone().normalize();
+  const e1 = new THREE.Vector3().crossVectors(n, V(0,1,0)).normalize(), e2 = new THREE.Vector3().crossVectors(n, e1).normalize(), pts = [];
+  for (let i=0;i<=180;i++){ const a = 2*Math.PI*i/180, v = e1.clone().multiplyScalar(Math.cos(a)).addScaledVector(e2, Math.sin(a)); if (v.y > y0 && v.y < y1 && v.z*s > 0) pts.push(v); }
+  pts.sort((a, b) => b.y - a.y); return pts;
+}
+const PL_TEST = (x, y) => x + 0.3*y > 0;   /* pleural suture: front = episternum; slants back toward the wing base */
+for (const T of THX){
+  const c = V(T.x, TY, 0);
+  const side = {side:THREE.DoubleSide};
+  let terg;
+  if (T.id === "prothorax"){
+    terg = new THREE.Mesh(band(0, 0.62), makeMat("#3f8f4a", side));
+    terg.scale.set(0.6, T.r*1.14, T.r*1.1); terg.position.copy(c).add(V(0.04,0,0));
+    reg(terg, ["pronotum","tergum","prothorax"], T.ex.clone().add(V(0,0.95,0)));
+  } else {
+    /* notum of a wing-bearing segment: scutum in front, shield-shaped scutellum behind */
+    const [scl, sct] = splitGeo(band(0, 0.36, 80, 24), (x, y, z) => x < -0.25 && Math.abs(z) < 0.12 + 0.95*(-0.25 - x));
+    const tEx = T.ex.clone().add(V(0,0.75,0));
+    terg = new THREE.Mesh(sct, makeMat("#4f9c55", side));
+    terg.scale.set(T.sx, T.r, T.r); terg.position.copy(c);
+    reg(terg, ["scutum","tergum", T.id], tEx);
+    const scu = new THREE.Mesh(scl, makeMat("#c9b64a", side));
+    scu.scale.set(T.sx, T.r*1.004, T.r*1.004); scu.position.copy(c);
+    reg(scu, ["scutellum","tergum", T.id], tEx);
+  }
+  if (T.id === "prothorax"){
+    const pl = new THREE.Mesh(band(0.36, 0.76), makeMat("#7cc06c", side));
+    pl.scale.set(T.sx, T.r*0.98, T.r*0.98); pl.position.copy(c);
+    reg(pl, ["pleuron", T.id], T.ex);
+  } else {
+    /* pleuron of a wing-bearing segment: episternum in front of the pleural suture, epimeron behind */
+    const [eps, epm] = splitGeo(band(0.36, 0.76, 80, 28), PL_TEST);
+    for (const [g, col, key] of [[eps, "#9fd88a", "episternum"], [epm, "#4f9a4a", "epimeron"]]){
+      const m = new THREE.Mesh(g, makeMat(col, side)); m.scale.set(T.sx, T.r*0.98, T.r*0.98); m.position.copy(c);
+      reg(m, [key, "pleuron", T.id], T.ex);
+    }
+    const y0 = Math.cos(0.76*Math.PI), y1 = Math.cos(0.36*Math.PI);
+    for (const s of [1,-1]){
+      const pts = sphereCut(V(1,0.3,0), y0+0.02, y1-0.02, s).map(v => V(v.x*T.sx, v.y*T.r*0.99, v.z*T.r*0.99));
+      const su = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 40, 0.016, 6, false), makeMat("#24502c"));
+      su.position.copy(c); reg(su, ["pleural-suture", "pleuron", T.id], T.ex);
+    }
+  }
+  const st = new THREE.Mesh(band(0.76, 1), makeMat("#2f7a42", side));
+  st.scale.set(T.sx, T.r, T.r); st.position.copy(c);
+  reg(st, ["sternum", T.id], T.ex.clone().add(V(0,-0.6,0)));
+  if (T.id !== "prothorax"){ // thoracic spiracles: one pair each on the meso- and metathorax, at the front of the pleuron
+    for (const s of [1,-1]){
+      const sp = new THREE.Mesh(new THREE.SphereGeometry(0.04, 10, 8), makeMat("#3a2a12",{bumpMap:null}));
+      sp.position.set(T.x + T.sx*0.7, TY-0.06, s*T.r*0.98*0.73);
+      reg(sp, ["spiracle", T.id], T.ex.clone().add(V(0,0,s*0.3)));
+    }
+  }
+}
+
+/* ---------------- wings ---------------- */
+function vRange(poly, u){
+  let lo = Infinity, hi = -Infinity;
+  for (let i=0;i<poly.length;i++){
+    const a = poly[i], b = poly[(i+1)%poly.length];
+    if ((a.x-u)*(b.x-u) <= 0 && a.x !== b.x){ const y = a.y + (u-a.x)/(b.x-a.x)*(b.y-a.y); lo = Math.min(lo,y); hi = Math.max(hi,y); }
+  }
+  return [lo,hi];
+}
+function wingShape(pts){
+  const sh = new THREE.Shape(); sh.moveTo(pts[0].x, pts[0].y);
+  sh.splineThru(pts.slice(1).concat([pts[0]])); return sh;
+}
+function veins(shape, L, fracs, nCross, seed, u0, u1){
+  u0 = u0 ?? 0.02; u1 = u1 ?? 0.97;
+  const poly = shape.getPoints(40), arr = [];
+  let s = seed; const rnd = () => (s = (s*16807) % 2147483647) / 2147483647;
+  const at = (u,f) => { const [lo,hi] = vRange(poly,u); return hi>lo ? new THREE.Vector3(u, lo+(hi-lo)*f, 0.003) : null; };
+  for (const f of fracs){
+    let prev = null;
+    for (let i=0;i<=34;i++){ const p = at(L*(u0+(u1-u0)*i/34), f); if (p && prev) arr.push(prev, p); prev = p; }
+  }
+  const c0 = Math.max(u0, 0.12);
+  for (let i=0;i<nCross;i++){
+    const u = L*(c0+(0.95-c0)*rnd()), k = Math.floor(rnd()*(fracs.length-1));
+    const a = at(u, fracs[k]), b = at(u, fracs[k+1]); if (a && b) arr.push(a, b);
+  }
+  return new THREE.BufferGeometry().setFromPoints(arr);
+}
+function basisQuat(len, wid){
+  len = len.clone().normalize();
+  wid = wid.clone().sub(len.clone().multiplyScalar(len.dot(wid))).normalize();
+  const n = new THREE.Vector3().crossVectors(len, wid);
+  return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(len, wid, n));
+}
+const FW_L = 3.5, HW_L = 3.2;
+const fwShape = wingShape([V(0,-0.04),V(FW_L*0.25,-0.08),V(FW_L*0.7,-0.06),V(FW_L*0.97,0.05),V(FW_L,0.18),V(FW_L*0.9,0.33),V(FW_L*0.55,0.4),V(FW_L*0.2,0.33),V(0,0.12)]);
+const hwShape = wingShape([V(0,-0.05),V(HW_L*0.35,-0.2),V(HW_L*0.8,-0.25),V(HW_L,-0.05),V(HW_L*0.97,0.4),V(HW_L*0.8,1.0),V(HW_L*0.55,1.45),V(HW_L*0.3,1.4),V(HW_L*0.1,0.8),V(0,0.15)]);
+/* wing surface as a (u,v) grid inside the outline, optionally domed (elytra); uv spans the wing 0..1 */
+function wingGeo(shape, L, u0, u1, dome, sgn, f0, f1){
+  f0 = f0 ?? 0; f1 = f1 ?? 1;
+  const poly = shape.getPoints(40), nu = 48, nv = 14, pos = [], uv = [], idx = [];
+  let vmin = Infinity, vmax = -Infinity; for (const p of poly){ vmin = Math.min(vmin, p.y); vmax = Math.max(vmax, p.y); }
+  for (let i=0;i<=nu;i++){
+    const uu = u0 + (u1-u0)*i/nu, x = L*Math.min(0.998, Math.max(0.002, uu));
+    let [lo, hi] = vRange(poly, x); if (!(hi > lo)) lo = hi = isFinite(lo) ? lo : 0;
+    for (let j=0;j<=nv;j++){
+      const f = f0 + (f1-f0)*j/nv, y = lo + (hi-lo)*f;
+      const z = dome ? sgn*dome*Math.sin(Math.PI*f)*Math.min(1, 6*uu*(1-uu)+0.25) : 0;
+      pos.push(x, y, z); uv.push(x/L, (y-vmin)/(vmax-vmin));
+    }
+  }
+  for (let i=0;i<nu;i++) for (let j=0;j<nv;j++){ const a = i*(nv+1)+j, b = a+nv+1; idx.push(a,b,a+1, b,b+1,a+1); }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(idx); g.computeVertexNormals(); return g;
+}
+/* butterfly-type wing: coloured scales overlapping like roof tiles, dark margin with pale spots */
+const scaleTex = (function(){
+  const c = document.createElement("canvas"); c.width = 512; c.height = 256; const g = c.getContext("2d");
+  let s = 5; const rnd = () => (s = (s*16807) % 2147483647) / 2147483647;
+  g.fillStyle = "#e8892b"; g.fillRect(0,0,512,256);
+  g.fillStyle = "#2a1a12"; g.fillRect(420,0,92,256); g.fillRect(0,0,512,26); g.fillRect(0,232,512,24);
+  g.fillStyle = "#f4ead2";
+  for (let i=0;i<9;i++){ g.beginPath(); g.arc(440+ (i%2)*30, 30+i*24, 5, 0, 7); g.fill(); }
+  for (let y=0, row=0; y<262; y+=5, row++) for (let x=(row%2)*4; x<516; x+=8){
+    g.fillStyle = "rgba(0,0,0,"+(0.06+rnd()*0.12)+")"; g.beginPath(); g.arc(x, y, 4.2, 0, Math.PI); g.fill();
+    g.fillStyle = "rgba(255,255,255,"+(rnd()*0.08)+")"; g.beginPath(); g.arc(x, y-1, 3, Math.PI, 2*Math.PI); g.fill();
+  }
+  const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; return t;
+})();
+const WINGTYPES = {
+  membrane: {n:1, th:"ปีกเยื่อบาง",  en:"Membrane",  ref:"38–39", t:"เนื้อปีกเป็นเยื่อบางใสตลอดทั้งปีก มองเห็นเส้นปีกชัดเจน", ex:"แมลงปอ ผึ้ง แมลงวัน และปีกคู่หลังของแมลงส่วนใหญ่"},
+  tegmina:  {n:2, th:"ปีกเหนียวหนา", en:"Tegmina",   ref:"38, 40", t:"เนื้อปีกเหนียวและหนา ยังมองเห็นเส้นปีก ช่วยปกป้องปีกคู่หลังที่พับอยู่ข้างใต้", ex:"ปีกคู่หน้าของตั๊กแตน"},
+  hemelytra:{n:3, th:"ปีกครึ่งแข็ง", en:"Hemelytra", ref:"38, 41", t:"มีเนื้อปีก 2 ลักษณะอยู่ร่วมกัน บริเวณโคนปีกค่อนข้างหนา (corium) ส่วนปลายปีกบาง (membrane)", ex:"ปีกคู่หน้าของมวน"},
+  elytra:   {n:4, th:"ปีกแข็ง",     en:"Elytra",    ref:"38, 41", t:"ปีกหนาแข็ง เรียบเป็นมัน ไม่มีเส้นปีก ปีกทั้งสองข้างมาชนกันพอดีที่กลางหลัง และคลุมปีกคู่หลังไว้", ex:"ปีกคู่หน้าของด้วง"},
+  scale:    {n:5, th:"ปีกเกล็ด",    en:"Scale wing", ref:"42",   t:"เยื่อปีกถูกปกคลุมด้วยเกล็ดเล็กๆ เรียงซ้อนกันคล้ายกระเบื้องมุงหลังคา สีและลวดลายของปีกมาจากเกล็ดเหล่านี้ ปีกทั้ง 2 คู่เป็นแบบเดียวกัน", ex:"ผีเสื้อกลางวันและผีเสื้อกลางคืน"},
+  haltere:  {n:6, th:"ปีกคู่หลังเป็นตุ่มทรงตัว", en:"Halteres", ref:null, src:G2, t:"ปีกคู่หน้าเป็นเยื่อบางใช้บิน ส่วนปีกคู่หลังลดรูปเหลือเป็นก้านสั้นปลายเป็นตุ่ม เรียกว่า haltere ช่วยรักษาการทรงตัวขณะบิน แมลงกลุ่มนี้จึงมีปีกที่ใช้บินเพียงคู่เดียว", ex:"แมลงวัน ยุง แมลงวันผลไม้ (Diptera)"},
+  fringed:  {n:7, th:"ปีกพู่ขน", en:"Fringed wing", ref:null, src:G2, t:"ปีกแคบเรียวคล้ายแถบ มีเส้นปีกน้อย ขอบปีกมีขนยาวเรียงเป็นพู่ ช่วยเพิ่มพื้นที่ปีกให้แมลงที่ตัวเล็กมากบินและลอยไปกับลมได้ ปีกทั้ง 2 คู่เป็นแบบเดียวกัน", ex:"เพลี้ยไฟ (Thysanoptera)"}
+};
+const ELY_L = 3.7;
+const elyShape = wingShape([V(0,0),V(ELY_L*0.15,-0.02),V(ELY_L*0.7,-0.02),V(ELY_L*0.97,0.06),V(ELY_L,0.16),V(ELY_L*0.9,0.42),V(ELY_L*0.6,0.56),V(ELY_L*0.2,0.56),V(0,0.36)]);
+const BF_L = 3.0, BH_L = 2.6;
+const bfShape = wingShape([V(0,-0.05),V(BF_L*0.5,-0.14),V(BF_L*0.95,-0.08),V(BF_L,0.3),V(BF_L*0.8,0.95),V(BF_L*0.45,1.05),V(BF_L*0.15,0.6),V(0,0.15)]);
+const bhShape = wingShape([V(0,0),V(BH_L*0.5,-0.1),V(BH_L*0.9,0.2),V(BH_L,0.65),V(BH_L*0.7,1.15),V(BH_L*0.35,1.2),V(BH_L*0.1,0.6)]);
+let wingType = "tegmina";
+function addWing(opts){
+  const g = new THREE.Group();
+  for (const p of opts.parts){
+    const op = p.opacity ?? 1;
+    const mat = makeMat(p.color, Object.assign({side:THREE.DoubleSide, transparent:op<1, opacity:op, roughness:0.5, bumpMap:null, depthWrite:op>=1}, p.mat||{}));
+    const mesh = new THREE.Mesh(p.geo, mat);
+    if (p.veinGeo){
+      const lmat = new THREE.LineBasicMaterial({color:p.vein, transparent:true, opacity:0.75});
+      lmat.userData.baseOpacity = 0.75;
+      const lines = new THREE.LineSegments(p.veinGeo, lmat);
+      mesh.userData.veins = lines; g.add(lines);
+    }
+    if (p.ctx) mesh.userData.ctx = true;
+    g.add(mesh); reg(mesh, p.tags, null, false);
+  }
+  for (const o of opts.extra || []) g.add(o);
+  g.userData = {hinge:opts.hinge, ex:opts.ex, qr:basisQuat(opts.restLen, opts.restWid), qs:basisQuat(opts.spLen, opts.spWid), sv0:opts.sv0};
+  root.add(g); wings.push(g); return g;
+}
+/* thrips-type wing: a narrow strap with a long marginal fringe; the fringe is a faint pickable halo carrying hair lines */
+const TH_FL = 3.0, TH_HL = 2.7;
+function fringedParts(L, tags){
+  const strap = wingShape([V(0,-0.03),V(L*0.3,-0.06),V(L*0.9,-0.05),V(L,0),V(L*0.92,0.07),V(L*0.3,0.1),V(0,0.08)]);
+  const halo = wingShape([V(0,-0.06),V(L*0.2,-0.32),V(L*0.6,-0.52),V(L*0.95,-0.42),V(L*1.07,0),V(L*0.95,0.24),V(L*0.4,0.27),V(0,0.1)]);
+  const poly = strap.getPoints(40), pts = [], N = 70;
+  for (let i=0;i<=N;i++){
+    const u = 0.1 + 0.89*i/N, x = L*u, [lo, hi] = vRange(poly, x); if (!(hi > lo)) continue;
+    const taper = Math.min(1, (u-0.1)*5) * (u > 0.93 ? 0.7 : 1);
+    pts.push(V(x, lo, 0.003), V(x + 0.12, lo - 0.46*taper, 0.003));
+    pts.push(V(x, hi, 0.003), V(x + 0.06, hi + 0.17*taper, 0.003));
+  }
+  const haloGeo = wingGeo(halo, L*1.07, 0, 1); haloGeo.translate(0, 0, -0.004);
+  return [
+    {geo:wingGeo(strap, L, 0, 1), color:"#7c5cc4", opacity:0.85, vein:"#3b2a75", veinGeo:veins(strap, L, [0.5], 0, 3, 0.05, 0.9), tags},
+    {geo:haloGeo, color:"#e6dcfa", opacity:0.25, vein:"#4b3790", veinGeo:new THREE.BufferGeometry().setFromPoints(pts), tags:["fringe"].concat(tags)}
+  ];
+}
+/* ---- wing venation (Comstock-Needham, generalized) and wing coupling ---- */
+const WINGEXTRA = {
+  venation:{n:"A", th:"เส้นปีกพื้นฐาน", en:"Comstock-Needham venation", src:G2,
+    t:"ระบบเรียกชื่อเส้นปีกที่ใช้กันทั่วไป เส้นปีกตามยาว 6 กลุ่มเรียงจากขอบหน้าไปขอบหลังของปีก คือ C, Sc, R, M, Cu และ A และมีเส้นขวาง (crossvein) เชื่อมระหว่างเส้นตามยาว ชื่อเส้นขวางเขียนด้วยตัวพิมพ์เล็ก เช่น r-m เชื่อม R กับ M",
+    ex:"ใช้เปรียบเทียบเส้นปีกของแมลงทุกอันดับ และเป็นลักษณะสำคัญในการจำแนกชนิดแมลง"},
+  hamuli:{n:"B", th:"ตะขอเกี่ยวปีก", en:"Hamulate coupling", src:G2,
+    t:"ขอบหน้าของปีกคู่หลังมีตะขอเล็กๆ เรียงเป็นแถว (hamuli) เกี่ยวกับรอยพับที่ขอบหลังของปีกคู่หน้า ปีกทั้ง 2 คู่จึงขยับขึ้นลงพร้อมกันเหมือนเป็นปีกคู่เดียว",
+    ex:"ผึ้ง ต่อ แตน (Hymenoptera)"},
+  frenulum:{n:"C", th:"ขนเกี่ยวปีก", en:"Frenate coupling", src:G2,
+    t:"โคนขอบหน้าของปีกคู่หลังมีขนแข็ง (frenulum) ยื่นไปสอดเกี่ยวกับตะขอ (retinaculum) ที่ด้านล่างของปีกคู่หน้า ทำให้ปีกทั้ง 2 คู่ติดกันขณะบิน",
+    ex:"ผีเสื้อกลางคืนส่วนใหญ่ (Lepidoptera)"}
+};
+const wingTypeInfo = k => WINGTYPES[k] || WINGEXTRA[k];
+const labelTexCache = {};
+function labelSprite(text, color, h, pos){
+  const key = text+color;
+  let tex = labelTexCache[key], w;
+  if (!tex){
+    const c = document.createElement("canvas"), g = c.getContext("2d"), font = "700 76px system-ui, sans-serif";
+    g.font = font; w = Math.ceil(g.measureText(text).width) + 36; c.width = w; c.height = 112;
+    g.font = font; g.textAlign = "center"; g.textBaseline = "middle"; g.lineJoin = "round";
+    g.lineWidth = 14; g.strokeStyle = "rgba(20,16,30,0.9)"; g.strokeText(text, w/2, 58);
+    g.fillStyle = color; g.fillText(text, w/2, 58);
+    tex = labelTexCache[key] = new THREE.CanvasTexture(c); tex.encoding = THREE.sRGBEncoding;
+  }
+  w = tex.image.width;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, depthTest:false, transparent:true}));
+  sp.scale.set(h*w/112, h, 1); sp.position.copy(pos); sp.renderOrder = 20; return sp;
+}
+function tubeGeo(pts, r, z){
+  const c = new THREE.CatmullRomCurve3(pts.map(p => p.isVector3 ? p : V(p[0], p[1], z ?? 0.012)));
+  return new THREE.TubeGeometry(c, Math.max(10, pts.length*10), r, 6, false);
+}
+const VN_L = 3.4, vy = y => (y - 0.5)*1.45;   /* raw y below: shifted so the base sits at the hinge, widened for legibility */
+const vnShape = wingShape([[0,0.62],[0.6,0.98],[1.8,1.06],[2.9,1.0],[3.4,0.75],[3.3,0.4],[2.6,0.12],[1.6,0.0],[0.7,0.08],[0.15,0.35]].map(p => V(p[0], vy(p[1]))));
+const VENATION = [   /* key, colour, branches (raw x,y), labels [text, x, y] */
+  ["vein-C",  "#e05555", [[[0.05,0.63],[0.6,0.96],[1.8,1.04],[2.9,0.98],[3.32,0.78]]], [["C",0.75,1.12]]],
+  ["vein-Sc", "#ef9a4a", [[[0.1,0.6],[0.7,0.86],[1.55,1.0]]], [["Sc",1.62,1.15]]],
+  ["vein-R",  "#e6c13e", [[[0.1,0.56],[0.9,0.78]], [[0.9,0.78],[1.9,0.93],[2.6,0.99]], [[0.9,0.78],[1.6,0.72]], [[1.6,0.72],[2.5,0.82],[3.17,0.89]], [[1.6,0.72],[2.6,0.66],[3.37,0.61]]],
+     [["R1",2.62,1.13], ["Rs",3.56,0.76]]],
+  ["vein-M",  "#4cbc6c", [[[0.12,0.5],[1.4,0.56]], [[1.4,0.56],[2.4,0.52],[3.32,0.45]], [[1.4,0.56],[2.3,0.38],[2.95,0.24]]], [["M",3.38,0.27]]],
+  ["vein-Cu", "#4a8ee6", [[[0.12,0.42],[1.1,0.36]], [[1.1,0.36],[1.9,0.2],[2.5,0.1]], [[1.1,0.36],[1.5,0.02]]], [["Cu1",2.62,-0.02], ["Cu2",1.56,-0.12]]],
+  ["vein-A",  "#a678e0", [[[0.16,0.34],[0.6,0.2],[0.95,0.05]], [[0.17,0.3],[0.45,0.17]]], [["1A",0.98,-0.07], ["2A",0.3,0.08]]],
+  ["cv-h",    "#f2f2f2", [[[0.35,0.81],[0.37,0.71]]], [["h",0.46,0.77]]],
+  ["cv-r",    "#f2f2f2", [[[2.2,0.955],[2.2,0.79]]], [["r",2.29,0.87]]],
+  ["cv-rm",   "#f2f2f2", [[[1.9,0.7],[1.9,0.54]]], [["r-m",2.03,0.63]]],
+  ["cv-m",    "#f2f2f2", [[[2.1,0.53],[2.1,0.42]]], [["m",2.19,0.47]]],
+  ["cv-mcu",  "#f2f2f2", [[[1.6,0.52],[1.6,0.26]]], [["m-cu",1.75,0.39]]],
+  ["cv-cua",  "#f2f2f2", [[[0.7,0.38],[0.68,0.16]]], [["cu-a",0.84,0.27]]]
+];
+function venationWing(withLabels){
+  const parts = [{geo:wingGeo(vnShape, VN_L, 0, 1), color:"#d8ccf5", opacity:0.55, tags:["forewing","mesothorax"]}], extra = [];
+  for (const [k, col, branches, labels] of VENATION){
+    const cross = k.startsWith("cv-");
+    for (const b of branches) parts.push({geo:tubeGeo(b.map(p => [p[0], vy(p[1])]), cross ? 0.02 : 0.03), color:cross ? "#3a3350" : col, tags:[k,"forewing","mesothorax"], mat:{roughness:0.45}});
+    if (withLabels) for (const [txt, x, y] of labels) extra.push(labelSprite(txt, col, cross ? 0.13 : 0.2, V(x, vy(y), 0.05)));
+  }
+  return {parts, extra};
+}
+/* bee: hindwing anterior margin carries a row of hooks */
+const HM_FL = 3.0, HM_HL = 2.3;
+const hmFore = wingShape([V(0,0),V(0.9,-0.18),V(2.0,-0.22),V(2.85,-0.02),V(3.0,0.2),V(2.6,0.42),V(1.5,0.5),V(0.5,0.42),V(0,0.2)]);
+const hmHind = wingShape([V(0,0),V(0.8,-0.2),V(1.8,-0.22),V(2.3,0),V(2.2,0.2),V(1.6,0.3),V(0.6,0.28),V(0,0.15)]);
+/* moth: frenulum bristle on the hindwing base, retinaculum hook under the forewing */
+const MO_FL = 3.0, MO_HL = 2.3;
+const moFore = wingShape([V(0,0),V(1.0,-0.08),V(2.4,-0.05),V(3.0,0.15),V(2.9,0.55),V(1.8,0.75),V(0.6,0.6),V(0,0.25)]);
+const moHind = wingShape([V(0,0.05),V(0.8,-0.25),V(1.9,-0.3),V(2.3,-0.05),V(2.1,0.25),V(1.2,0.4),V(0.3,0.35),V(0,0.2)]);
+const COUPLE_C = "#f0b030";
+function couplingWings(type, s){
+  const FT = ["forewing","mesothorax"], HT = ["hindwing","metathorax"];
+  const flat = {restLen:V(-0.15,0.06,s), restWid:V(1,0.02,0), spLen:V(-0.15,0.06,s), spWid:V(1,0.02,0), sv0:1};
+  const bee = type === "hamuli";
+  const fS = bee ? hmFore : moFore, hS = bee ? hmHind : moHind, fL = bee ? HM_FL : MO_FL, hL = bee ? HM_HL : MO_HL;
+  const fParts = [{geo:wingGeo(fS, fL, 0, 1), color:bee ? "#c9b8f2" : "#8a6a4a", opacity:bee ? 0.4 : 0.6, vein:bee ? "#4b3790" : "#3a2a1a",
+    veinGeo:veins(fS, fL, [0.15,0.35,0.55,0.75,0.9], bee ? 14 : 0, 5), tags:FT, ctx:true}];
+  const hParts = [{geo:wingGeo(hS, hL, 0, 1), color:bee ? "#d6c9f5" : "#a88a66", opacity:bee ? 0.4 : 0.6, vein:bee ? "#5b45a6" : "#4a3a28",
+    veinGeo:veins(hS, hL, [0.2,0.45,0.7,0.9], bee ? 6 : 0, 9), tags:HT, ctx:true}];
+  const fX = [], hX = [], hpoly = hS.getPoints(40);
+  if (bee){
+    const HK = ["hamuli","hindwing","metathorax"];
+    for (let i=0;i<12;i++){
+      const x = hL*(0.36 + 0.24*i/11), hi = vRange(hpoly, x)[1];
+      hParts.push({geo:tubeGeo([V(x,hi-0.02,0), V(x,hi+0.015,s*0.035), V(x,hi-0.005,s*0.065), V(x,hi-0.035,s*0.055)], 0.011), color:COUPLE_C, tags:HK, mat:{roughness:0.35}});
+    }
+    if (s === 1) hX.push(labelSprite("hamuli", COUPLE_C, 0.13, V(hL*0.48, vRange(hpoly, hL*0.48)[1]-0.14, 0.08)));
+  } else {
+    const x0 = 0.12, hi = vRange(hpoly, x0)[1];
+    hParts.push({geo:tubeGeo([V(x0,hi-0.02,0), V(0.35,hi+0.13,s*0.006), V(0.62,hi+0.3,s*0.008)], 0.016), color:COUPLE_C, tags:["frenulum","hindwing","metathorax"], mat:{roughness:0.35}});
+    fParts.push({geo:tubeGeo([V(0.56,0.04,-s*0.01), V(0.64,0.11,-s*0.075), V(0.74,0.17,-s*0.06), V(0.78,0.14,-s*0.02)], 0.022), color:"#e8703a", tags:["retinaculum","forewing","mesothorax"], mat:{roughness:0.35}});
+    if (s === 1){
+      hX.push(labelSprite("frenulum", COUPLE_C, 0.12, V(0.3, hi-0.16, 0.08)));
+      fX.push(labelSprite("retinaculum", "#e8703a", 0.12, V(0.95, -0.1, -0.1)));
+    }
+  }
+  addWing(Object.assign({parts:fParts, extra:fX, hinge:V(0.35,0.62,s*0.3), ex:V(0,0.5,s*0.25)}, flat));
+  addWing(Object.assign({parts:hParts, extra:hX, hinge:V(-0.08,0.6,s*0.28), ex:V(0,0.08,s*0.25)}, flat));
+}
+function buildWings(type){
+  const gone = new Set();
+  for (const g of wings){ if (g.userData.weevil) continue; root.remove(g); g.traverse(o => { if (o.isMesh || o.isLineSegments){ gone.add(o); o.geometry.dispose(); } }); }
+  for (let i=wings.length-1;i>=0;i--) if (!wings[i].userData.weevil) wings.splice(i,1);
+  for (let i=pickables.length-1;i>=0;i--) if (gone.has(pickables[i])) pickables.splice(i,1);
+  const FT = ["forewing","mesothorax"], HT = ["hindwing","metathorax"];
+  for (const s of [1,-1]){
+    if (type === "hamuli" || type === "frenulum"){ couplingWings(type, s); continue; }
+    const fwPose = {hinge:V(0.45,0.52,s*0.3), ex:V(0.05,0.85,s*0.75), restLen:V(-1,0.02,s*0.04), restWid:V(0,-0.8,s*0.6), spLen:V(-0.25,0.12,s), spWid:V(1,0.05,0), sv0:1};
+    const hwPose = {hinge:V(-0.28,0.46,s*0.27), ex:V(-0.85,0.7,s*0.7), restLen:V(-1,0,s*0.03), restWid:V(0,-0.8,s*0.6), spLen:V(-0.45,0.1,s), spWid:V(-1,0,0), sv0:0.17};
+    const fwVeins = (u0, u1) => veins(fwShape, FW_L, [0.1,0.28,0.46,0.64,0.82], 60, 11, u0, u1);
+    let fore;
+    if (type === "membrane") fore = [{geo:wingGeo(fwShape, FW_L, 0, 1), color:"#c9b8f2", opacity:0.42, vein:"#4b3790", veinGeo:veins(fwShape, FW_L, [0.08,0.2,0.33,0.46,0.6,0.74,0.88], 130, 11), tags:FT}];
+    else if (type === "hemelytra") fore = [
+      {geo:wingGeo(fwShape, FW_L, 0, 0.6, 0, 1, 0.34, 1), color:"#6a46b8", tags:["corium","forewing","mesothorax"], mat:{roughness:0.4}},
+      {geo:wingGeo(fwShape, FW_L, 0, 0.6, 0, 1, 0, 0.32), color:"#4a2f8c", tags:["clavus","forewing","mesothorax"], mat:{roughness:0.4}},
+      {geo:wingGeo(fwShape, FW_L, 0.6, 1), color:"#d8ccf5", opacity:0.45, vein:"#4b3790", veinGeo:veins(fwShape, FW_L, [0.15,0.35,0.55,0.75,0.9], 0, 11, 0.62, 0.97), tags:FT}];
+    else if (type === "elytra"){
+      fore = [{geo:wingGeo(elyShape, ELY_L, 0, 1, 0.2, s), color:"#3d2a7a", tags:FT, mat:{roughness:0.18, metalness:0.25}}];
+      Object.assign(fwPose, {hinge:V(0.45,0.63,s*0.02), restLen:V(-1,-0.02,s*0.01), restWid:V(0,-0.5,s*0.87), spLen:V(-0.3,0.6,s*0.75), spWid:V(1,0.15,0)});
+    }
+    else if (type === "fringed"){
+      fore = fringedParts(TH_FL, FT);
+      Object.assign(fwPose, {hinge:V(0.45,0.63,s*0.12), restWid:V(0,0.12,s)});
+    }
+    else if (type === "haltere") fore = [{geo:wingGeo(fwShape, FW_L, 0, 1), color:"#c9b8f2", opacity:0.42, vein:"#4b3790", veinGeo:veins(fwShape, FW_L, [0.08,0.22,0.4,0.6,0.8], 25, 11), tags:FT}];
+    else if (type === "venation"){
+      const vw = venationWing(s === 1); fore = vw.parts; fwPose.extra = vw.extra;
+      Object.assign(fwPose, {hinge:V(0.45,0.62,s*0.3), ex:V(0,0.4,s*0.3), restLen:V(-0.04,0.06,s), restWid:V(1,0.02,0), spLen:V(-0.04,0.06,s), spWid:V(1,0.02,0)});
+    }
+    else if (type === "scale") fore = [{geo:wingGeo(bfShape, BF_L, 0, 1), color:"#ffffff", tags:FT, mat:{map:scaleTex, roughness:0.7}, vein:"#2a1a12", veinGeo:veins(bfShape, BF_L, [0.12,0.3,0.48,0.66,0.84], 0, 7)}];
+    else fore = [{geo:wingGeo(fwShape, FW_L, 0, 1), color:"#7c5cc4", opacity:0.95, vein:"#3b2a75", veinGeo:fwVeins(), tags:FT}];
+    addWing(Object.assign({parts:fore}, fwPose));
+
+    if (type === "haltere"){
+      const HT2 = ["haltere","hindwing","metathorax"];
+      const stalk = capsuleGeo(0.42, 0.028, 0.02, 0); stalk.rotateZ(-Math.PI/2);
+      const knob = new THREE.SphereGeometry(0.085, 20, 14); knob.scale(1.35, 1, 1); knob.translate(0.48, 0, 0);
+      addWing({parts:[{geo:stalk, color:"#8f74d6", tags:HT2}, {geo:knob, color:"#b9a3ef", tags:HT2}],
+        hinge:V(-0.3,0.32,s*0.5), ex:V(-0.6,0.3,s*0.8), restLen:V(-0.55,-0.35,s*0.6), restWid:V(0,1,0), spLen:V(-0.45,-0.1,s*0.8), spWid:V(0,1,0), sv0:1});
+    } else if (type === "fringed"){
+      addWing(Object.assign({parts:fringedParts(TH_HL, HT)}, hwPose, {hinge:V(-0.28,0.6,s*0.1), restWid:V(0,0.1,s), sv0:1}));
+    } else if (type === "scale"){
+      addWing(Object.assign({parts:[{geo:wingGeo(bhShape, BH_L, 0, 1), color:"#ffffff", tags:HT, mat:{map:scaleTex, roughness:0.7}, vein:"#2a1a12", veinGeo:veins(bhShape, BH_L, [0.15,0.35,0.55,0.75,0.9], 0, 9)}]},
+        hwPose, {hinge:V(-0.28,0.44,s*0.34), sv0:1}));
+    } else {
+      addWing(Object.assign({parts:[{geo:wingGeo(hwShape, HW_L, 0, 1), color:"#b9a3ef", opacity:0.5, vein:"#5b45a6", veinGeo:veins(hwShape, HW_L, [0.04,0.14,0.26,0.38,0.5,0.62,0.74,0.86,0.96], 90, 29), tags:HT}]},
+        hwPose, type === "elytra" ? {hinge:V(-0.28,0.5,s*0.12)} : {}));
+    }
+  }
+}
+buildWings(wingType);
+
+/* ---------------- legs: 8 types (slides 47–54) ---------------- */
+const PRETTYPES = {
+  arolium: {n:1, th:"มีแผ่น arolium", en:"Arolium", sel:"arolium", src:G2, t:"ระหว่างเล็บ 1 คู่มีแผ่นนุ่ม arolium 1 แผ่น ช่วยยึดเกาะผิวเรียบ", ex:"ตั๊กแตน แมลงสาบ ผึ้ง ต่อ แตน"},
+  pulvilli:{n:2, th:"มี pulvilli และ empodium", en:"Pulvilli + empodium", sel:"pulvillus", src:G2, t:"ใต้เล็บแต่ละข้างมีแผ่นนุ่ม pulvillus รวม 1 คู่ และมี empodium เป็นขนแข็งอยู่ตรงกลางระหว่างแผ่นทั้งสอง แผ่น pulvilli มีขนเล็กๆ จำนวนมาก ทำให้เกาะผนังหรือกระจกได้", ex:"แมลงวัน (Diptera)"},
+  claws:   {n:3, th:"มีแต่เล็บ", en:"Claws only", sel:"claw", src:G2, t:"ปลายเท้ามีเพียงเล็บ 1 คู่ ไม่มีแผ่นยึดเกาะที่ pretarsus แมลงบางกลุ่มใช้ขนใต้ปล้องเท้า (tarsomere) ช่วยยึดเกาะแทน", ex:"ด้วงหลายชนิด"}
+};
+let pretType = "arolium";
+const LEGC = {coxa:"#a63d32", trochanter:"#e08a3c", femur:"#d24b3c", tibia:"#e9846a", tarsus:"#d8a25e", pretarsus:"#5e3b2c"};
+const LEGTYPES = {
+  walking:  {n:1, th:"ขาเดิน",      en:"Walking leg",           pair:"leg-hind", style:"walk",  ref:"47", t:"femur และ tibia เรียวยาว แข็งแรง", ex:"แมลงสาบ แมลงวัน มวน ด้วง"},
+  jumping:  {n:2, th:"ขากระโดด",    en:"Jumping leg",           pair:"leg-hind", style:"jump",  ref:"48", t:"femur ของขาคู่หลังขยายใหญ่ ภายในมีกล้ามเนื้อที่แข็งแรง", ex:"ขาคู่หลังของตั๊กแตน เพลี้ยกระโดด"},
+  digging:  {n:3, th:"ขาขุด",       en:"Digging leg",           pair:"leg-fore", style:"dig",   ref:"49", t:"ปล้องขาสั้นและแข็งแรง tibia แบน และ tarsus มีลักษณะคล้ายคราด ใช้สำหรับขุดดิน", ex:"ขาคู่หน้าของแมลงกระชอน"},
+  grasping: {n:4, th:"ขาหนีบ",      en:"Grasping (raptorial) leg", pair:"leg-fore", style:"grasp", ref:"50", t:"coxa ยาวกว่าปกติ ด้านในของ femur และ tibia มีหนามแหลม ใช้หนีบเข้าหากันขณะจับเหยื่อ", ex:"ขาคู่หน้าของตั๊กแตนตำข้าว"},
+  clasping: {n:5, th:"ขาจับ",       en:"Clasping leg",          pair:"leg-fore", style:"clasp", ref:"51", t:"coxa สั้นมาก femur อ้วนใหญ่ และ tibia เรียวเล็ก ทั้ง femur และ tibia ไม่มีฟันช่วยในการจับเหยื่อ", ex:"ขาคู่หน้าของแมลงดานา"},
+  clinging: {n:6, th:"ขาเกี่ยว",     en:"Clinging leg",          pair:"leg-fore", style:"cling", ref:"52", t:"femur และ tibia อ้วนใหญ่ tarsus มี 1–2 ปล้อง และ pretarsus เป็นตะขอใช้เกี่ยวเส้นขนของสัตว์", ex:"ขาคู่หน้าของเหา"},
+  swimming: {n:7, th:"ขาว่ายน้ำ",    en:"Swimming leg",          pair:"leg-hind", style:"swim",  ref:"53", t:"tibia และ tarsus แบน ตามขอบมีขนแข็งเรียงเป็นแพ ช่วยในการว่ายน้ำ", ex:"ขาคู่หลังของแมลงเหนี่ยง แมลงดานา ด้วงสี่ตา"},
+  carrying: {n:8, th:"ขาเก็บอาหาร",  en:"Pollen-carrying leg",   pair:"leg-hind", style:"carry", ref:"54", t:"ปลาย tibia แบนใหญ่และมีขนยาวล้อมรอบเป็นตะกร้าเก็บละอองเกสร (pollen basket) ด้านในของ metatarsus มีขนแข็งเรียงเป็นแถว (comb) ปลาย tibia มีขนแข็ง 1 แถว (rake) และมี pollen press ที่ตอนหน้าของ metatarsus", ex:"ขาคู่หลังของผึ้งงาน"}
+};
+const LEG_BASE = {
+  "leg-fore":{seg:0, base:V(1.15,-0.38,0.25), dx:0.5},
+  "leg-mid": {seg:1, base:V(0.42,-0.4,0.28),  dx:0},
+  "leg-hind":{seg:2, base:V(-0.3,-0.4,0.32),  dx:-0.45}
+};
+const LEGSTYLE = {
+  "walk-fore":{j:[V(0.02,-0.22,0.12),V(0.05,-0.08,0.08),V(0.25,0.05,0.55),V(0.18,-0.85,0.15)], tar:V(0.32,-0.04,0.1), nt:3,
+    r:{coxa:[0.12,0.1],tro:[0.085,0.075],fem:[0.085,0.065,0.03],tib:[0.05,0.045]}},
+  "walk-mid": {j:[V(0,-0.2,0.12),V(0,-0.08,0.08),V(-0.05,0.08,0.62),V(-0.1,-0.85,0.2)], tar:V(0.06,-0.04,0.32), nt:3,
+    r:{coxa:[0.12,0.1],tro:[0.085,0.075],fem:[0.09,0.07,0.03],tib:[0.05,0.045]}},
+  "walk-hind":{j:[V(-0.02,-0.18,0.1),V(-0.05,-0.06,0.06),V(-0.55,0.12,0.62),V(-0.35,-0.88,0.25)], tar:V(-0.36,-0.04,0.12), nt:3,
+    r:{coxa:[0.13,0.11],tro:[0.09,0.08],fem:[0.095,0.07,0.03],tib:[0.055,0.048]}},
+  "jump-hind":{j:[V(-0.02,-0.18,0.1),V(-0.05,-0.06,0.06),V(-1.75,0.75,0.4),V(1.1,-1.58,0.12)], tar:V(-0.42,-0.05,0.03), nt:3,
+    r:{coxa:[0.14,0.12],tro:[0.1,0.09],fem:[0.15,0.07,0.11],tib:[0.06,0.05]}},
+  "dig-fore": {j:[V(0.04,-0.18,0.12),V(0.05,-0.06,0.06),V(0.32,-0.02,0.3),V(0.22,-0.34,0.12)], tar:V(0.06,-0.22,0.04), nt:3, broad:V(0,0,1),
+    r:{coxa:[0.14,0.12],tro:[0.1,0.09],fem:[0.15,0.12,0.04],tib:[0.11,0.13]}, tibFlat:[1.5,0.5]},
+  "grasp-fore":{j:[V(0.35,-0.42,0.1),V(0.04,-0.05,0.03),V(0.3,0.45,0.05),V(-0.1,-0.45,0)], tar:V(0.05,-0.3,0.03), nt:3,
+    r:{coxa:[0.1,0.085],tro:[0.07,0.065],fem:[0.1,0.07,0.03],tib:[0.06,0.045]}},
+  "clasp-fore":{j:[V(0.02,-0.08,0.06),V(0.03,-0.05,0.05),V(0.45,0.05,0.35),V(0.28,-0.3,0.05)], tar:V(0.12,-0.06,0), nt:1,
+    r:{coxa:[0.1,0.09],tro:[0.08,0.075],fem:[0.17,0.11,0.07],tib:[0.05,0.035]}},
+  "cling-fore":{j:[V(0.02,-0.15,0.1),V(0.03,-0.06,0.06),V(0.18,-0.05,0.3),V(0.08,-0.3,0.08)], tar:V(0.04,-0.1,0), nt:1,
+    r:{coxa:[0.12,0.1],tro:[0.09,0.085],fem:[0.15,0.12,0.03],tib:[0.13,0.11]}},
+  "swim-hind":{j:[V(-0.02,-0.18,0.1),V(-0.05,-0.06,0.06),V(-0.6,0.1,0.55),V(-0.45,-0.25,0.35)], tar:V(-0.7,-0.05,0.25), nt:5, broad:V(0,1,0),
+    r:{coxa:[0.13,0.11],tro:[0.09,0.08],fem:[0.09,0.07,0.02],tib:[0.07,0.075]}, tibFlat:[1.6,0.45], tarFlat:[1.6,0.45]},
+  "carry-hind":{j:[V(-0.02,-0.18,0.1),V(-0.05,-0.06,0.06),V(-0.5,0.12,0.5),V(-0.48,-0.72,0.2)], tar:V(-0.12,-0.45,0.06), nt:5, broad:V(1,0,0),
+    r:{coxa:[0.13,0.11],tro:[0.09,0.08],fem:[0.085,0.07,0.02],tib:[0.05,0.13]}, tibFlat:[1.0,0.45]}
+};
+let legMeshes = [], legType = "jumping";
+function legStyles(type){
+  const T = LEGTYPES[type];
+  return {"leg-fore": T.pair === "leg-fore" ? T.style : "walk", "leg-mid":"walk", "leg-hind": T.pair === "leg-hind" ? T.style : "jump"};
+}
+function buildLegs(type){
+  const gone = new Set(legMeshes);
+  for (const m of legMeshes){ root.remove(m); if (m.geometry !== hairGeo) m.geometry.dispose(); }
+  for (let i=pickables.length-1;i>=0;i--) if (gone.has(pickables[i])) pickables.splice(i,1);
+  for (let i=movers.length-1;i>=0;i--) if (gone.has(movers[i])) movers.splice(i,1);
+  legMeshes = [];
+  const st = legStyles(type);
+  for (const pid of ["leg-fore","leg-mid","leg-hind"]) for (const s of [1,-1]) buildLeg(pid, st[pid], s);
+}
+function buildLeg(pid, style, s){
+  const B = LEG_BASE[pid], S0 = LEGSTYLE[style + "-" + pid.split("-")[1]];
+  // modified forelegs are drawn larger so the shape reads next to the big head
+  const sc = ["dig","grasp","clasp","cling"].includes(style) ? 1.45 : 1;
+  const S = Object.assign({}, S0, {j:S0.j.map(v => v.clone().multiplyScalar(sc)), tar:S0.tar.clone().multiplyScalar(sc),
+    r:Object.fromEntries(Object.entries(S0.r).map(([k, a]) => [k, a.map(x => x*sc)]))});
+  const m = p => V(p.x, p.y, s*p.z);
+  const P = [m(B.base)]; for (const d of S.j) P.push(P[P.length-1].clone().add(m(d)));
+  const o = V(B.dx, -0.3, s).normalize(), segEx = THX[B.seg].ex, lat = V(0,0,s);
+  const exFor = (idx, dir) => segEx.clone().addScaledVector(o, 1.15).addScaledVector(dir.clone().normalize(), idx*0.22);
+  const mats = {}; const M = (c, tags) => { const k = c + tags.join(); return mats[k] || (mats[k] = makeMat(c)); };
+  const add = (mesh, tags, ex) => { reg(mesh, tags, ex); legMeshes.push(mesh); return mesh; };
+  const segL = (a, b, r0, r1, bulge, color, tags) => { const d = b.clone().sub(a); const mm = new THREE.Mesh(capsuleGeo(d.length(), r0, r1, bulge||0), M(color, tags)); mm.position.copy(a); mm.quaternion.setFromUnitVectors(UP, d.normalize()); return mm; };
+  const flat = (mesh, dir, broad, fx, fz) => {
+    const cx = V(1,0,0).applyQuaternion(mesh.quaternion);
+    const b = broad.clone().addScaledVector(dir, -broad.dot(dir)).normalize();
+    mesh.quaternion.premultiply(new THREE.Quaternion().setFromUnitVectors(cx, b)); mesh.scale.set(fx, 1, fz);
+  };
+  const hairL = (p, dir, len, r, color, tags) => { const h = new THREE.Mesh(hairGeo, M(color, tags)); h.position.copy(p); h.scale.set(r, len, r); h.quaternion.setFromUnitVectors(UP, dir.clone().normalize()); return h; };
+  const cone = (p, dir, len, r, color, tags) => { const c = new THREE.Mesh(new THREE.ConeGeometry(r, len, 8), M(color, tags)); const dn = dir.clone().normalize(); c.position.copy(p).addScaledVector(dn, len/2); c.quaternion.setFromUnitVectors(UP, dn); return c; };
+  const perp = (v, axis) => v.clone().addScaledVector(axis, -v.dot(axis)).normalize();
+
+  const names = ["coxa","trochanter","femur","tibia"], rr = [S.r.coxa, S.r.tro, S.r.fem, S.r.tib], segMesh = [];
+  names.forEach((nm, i) => {
+    const tags = [nm, pid], dir = P[i+1].clone().sub(P[i]).normalize();
+    const mesh = segL(P[i], P[i+1], rr[i][0], rr[i][1], rr[i][2]||0, LEGC[nm], tags);
+    if (nm === "tibia" && S.tibFlat) flat(mesh, dir, m(S.broad), S.tibFlat[0], S.tibFlat[1]);
+    add(mesh, tags, exFor(i, dir)); segMesh.push(mesh);
+  });
+  const K = P[3], TE = P[4], femDir = K.clone().sub(P[2]).normalize(), tibDir = TE.clone().sub(K).normalize();
+  const femEx = exFor(2, femDir), tibEx = exFor(3, tibDir), TT = ["tibia", pid];
+
+  if (style === "jump"){ // two rows of tibial spines
+    for (let k=1;k<=7;k++) for (const off of [-0.05, 0.05]){
+      const p = K.clone().lerp(TE, 0.2 + 0.1*k).add(V(-0.04, 0, s*off));
+      add(cone(p, V(-0.9,-0.35,s*off*4), 0.12, 0.018, LEGC.tibia, TT), TT, tibEx);
+    }
+  }
+  if (style === "dig"){ // broad tibia ending in stout teeth
+    const b = perp(m(S.broad), tibDir);
+    for (let k=0;k<4;k++) add(cone(TE.clone().addScaledVector(b, (k-1.5)*0.1), tibDir.clone().multiplyScalar(0.6).add(V(0.6,0,0)), 0.17, 0.035, LEGC.tibia, TT), TT, tibEx);
+  }
+  if (style === "grasp"){ // spines on the facing sides of femur and tibia
+    const inF = perp(TE.clone().sub(P[2]), femDir), inT = perp(P[2].clone().sub(K), tibDir), FT = ["femur", pid];
+    for (let k=0;k<6;k++) for (const off of [-0.035, 0.035])
+      add(cone(P[2].clone().lerp(K, 0.25 + 0.12*k).addScaledVector(lat, off).addScaledVector(inF, rr[2][0]*0.7), inF, 0.1, 0.018, LEGC.femur, FT), FT, femEx);
+    for (let k=0;k<5;k++) add(cone(K.clone().lerp(TE, 0.25 + 0.14*k).addScaledVector(inT, 0.04), inT, 0.07, 0.014, LEGC.tibia, TT), TT, tibEx);
+    add(cone(TE, tibDir.clone().addScaledVector(inT, 0.8), 0.14, 0.03, LEGC.tibia, TT), TT, tibEx);
+  }
+  if (style === "swim"){ // fringe of stiff hairs on both edges of the flat tibia
+    const b = perp(m(S.broad), tibDir);
+    for (let j=0;j<8;j++){
+      const tt = 0.15 + 0.11*j, c = K.clone().lerp(TE, tt), rad = (rr[3][0] + (rr[3][1]-rr[3][0])*tt) * S.tibFlat[0];
+      for (const sg of [1,-1]) add(hairL(c.clone().addScaledVector(b, sg*rad*0.9), b.clone().multiplyScalar(sg).addScaledVector(tibDir, 0.25), 0.13, 0.006, "#f0d9a8", TT), TT, tibEx);
+    }
+  }
+  const t = m(S.tar), tn = t.clone().normalize(), tarEx = exFor(4, t), pEx = exFor(5, t);
+  let out = null;
+  if (style === "carry"){ // pollen basket, pollen load and rake on the tibia
+    const bt = perp(m(S.broad), tibDir);
+    out = perp(perp(lat, tibDir), bt);
+    const BK = ["pollen-basket", pid];
+    for (let j=0;j<8;j++){
+      const tt = 0.4 + 0.08*j, c = K.clone().lerp(TE, tt), rad = (rr[3][0] + (rr[3][1]-rr[3][0])*tt) * S.tibFlat[0];
+      for (const sg of [1,-1]) add(hairL(c.clone().addScaledVector(bt, sg*rad*0.92), bt.clone().multiplyScalar(sg*0.35).add(out), 0.16, 0.007, "#e8c27a", BK), BK, tibEx);
+    }
+    const pel = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), M("#f08a1c", BK));
+    pel.position.copy(K.clone().lerp(TE, 0.72)).addScaledVector(out, 0.06);
+    pel.quaternion.copy(segMesh[3].quaternion); pel.scale.set(0.1, 0.16, 0.06);
+    add(pel, BK, tibEx);
+    const RK = ["rake", pid];
+    for (let k=0;k<7;k++) add(hairL(TE.clone().addScaledVector(bt, (k-3)*0.03), tibDir.clone().addScaledVector(out, -0.3), 0.09, 0.008, "#5e3b2c", RK), RK, tibEx);
+  }
+
+  // tarsus
+  let p = TE.clone();
+  const fr = style === "carry" ? [0.45,0.1375,0.1375,0.1375,0.1375] : Array(S.nt).fill(1/S.nt);
+  const TS = ["tarsus", pid];
+  fr.forEach((f, k) => {
+    const q = p.clone().addScaledVector(t, f);
+    let r0 = Math.max(0.045 - k*0.004, 0.022), r1 = Math.max(0.04 - k*0.004, 0.02);
+    if (style === "carry" && k === 0){ r0 = 0.085; r1 = 0.075; }
+    if (style === "swim"){ r0 = 0.05; r1 = 0.045; }
+    if (style === "clasp" || style === "cling"){ r0 = 0.06; r1 = 0.05; }
+    const tm = segL(p, q.clone().lerp(p, 0.08), r0, r1, 0, LEGC.tarsus, TS);
+    if (style === "swim") flat(tm, tn, m(S.broad), S.tarFlat[0], S.tarFlat[1]);
+    if (style === "carry" && k === 0) flat(tm, tn, m(S.broad), 1.0, 0.45);
+    add(tm, TS, tarEx);
+    if (style === "swim"){
+      const b = perp(m(S.broad), tn);
+      for (let j=0;j<3;j++) for (const sg of [1,-1])
+        add(hairL(p.clone().lerp(q, 0.2 + 0.3*j).addScaledVector(b, sg*r0*1.4), b.clone().multiplyScalar(sg).addScaledVector(tn, 0.3), 0.12, 0.006, "#f0d9a8", TS), TS, tarEx);
+    }
+    if (style === "carry" && k === 0){ // comb on the inner face, pollen press at the front end of the metatarsus
+      const bt = perp(m(S.broad), tn), CB = ["comb", pid];
+      for (let row=0; row<4; row++) for (let j=0;j<6;j++)
+        add(hairL(p.clone().lerp(q, 0.15 + 0.14*j).addScaledVector(bt, (row-1.5)*0.035).addScaledVector(out, -0.03), out.clone().negate().addScaledVector(tn, 0.3), 0.06, 0.005, "#7a5232", CB), CB, tarEx);
+      const PP = ["pollen-press", pid];
+      const pr = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 10), M("#c98a2e", PP));
+      pr.position.copy(p).addScaledVector(tn, 0.03).addScaledVector(out, 0.03); pr.quaternion.copy(tm.quaternion); pr.scale.set(0.08, 0.04, 0.03);
+      add(pr, PP, tarEx);
+    }
+    p = q;
+  });
+
+  // pretarsus
+  const PT = ["pretarsus", pid];
+  if (style === "cling"){ // single large hook curling back toward the tibia
+    const q1 = p.clone().addScaledVector(tn, 0.1), q2 = q1.clone().addScaledVector(tn, -0.03).addScaledVector(tibDir, -0.12);
+    add(segL(p, q1, 0.035, 0.03, 0, LEGC.pretarsus, PT), PT, pEx);
+    add(segL(q1, q2, 0.03, 0.006, 0, LEGC.pretarsus, PT), PT, pEx);
+  } else if (style === "clasp"){
+    add(cone(p, tn.clone().add(V(0,-0.3,0)), 0.12, 0.022, LEGC.pretarsus, PT), PT, pEx);
+  } else {
+    const side = new THREE.Vector3().crossVectors(tn, UP).normalize(), CL = ["claw","pretarsus",pid];
+    for (const c of [-1,1]) add(cone(p, tn.clone().addScaledVector(side, c*0.6).add(V(0,-0.4,0)), 0.1, 0.02, LEGC.pretarsus, CL), CL, pEx);
+    if (pretType === "arolium"){
+      const AR = ["arolium","pretarsus",pid], ar = new THREE.Mesh(new THREE.SphereGeometry(0.042, 12, 10), M("#f0d2a2", AR));
+      ar.position.copy(p).addScaledVector(tn, 0.025); ar.position.y -= 0.02; add(ar, AR, pEx);
+    } else if (pretType === "pulvilli"){
+      const PV = ["pulvillus","pretarsus",pid], EM = ["empodium","pretarsus",pid];
+      for (const c of [-1,1]){
+        const pv = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 10), M("#f0d2a2", PV));
+        pv.position.copy(p).addScaledVector(tn, 0.035).addScaledVector(side, c*0.032); pv.position.y -= 0.03;
+        pv.quaternion.setFromUnitVectors(V(1,0,0), tn); pv.scale.set(0.055, 0.018, 0.032); add(pv, PV, pEx);
+      }
+      add(cone(p.clone().add(V(0,-0.012,0)), tn.clone().add(V(0,-0.5,0)), 0.075, 0.007, "#4a2e20", EM), EM, pEx);
+    }
+  }
+}
+buildLegs(legType);
+
+/* ---------------- abdomen ---------------- */
+const abdBase = V(-1.6, 0, 0);
+let lastX = 0, lastR = 0;
+for (let i=1;i<=10;i++){
+  const x = -0.85 - (i-1)*0.33;
+  const r = 0.56 - 0.022*(i-1) - (i>7 ? 0.05*(i-7) : 0);
+  const y = TY - 0.012*i;
+  const ex = abdBase.clone().add(V(-0.14*i, 0, 0));
+  reg(ell(0.23, r*0.95, r*0.92, i%2 ? "#e0a33c" : "#d39130", V(x, y, 0)), ["abdomen"], ex);
+  if (i <= 8){
+    for (const s of [1,-1]){
+      const sp = new THREE.Mesh(new THREE.SphereGeometry(0.035, 10, 8), makeMat("#3a2a12",{bumpMap:null}));
+      sp.position.set(x+0.04, y-0.08, s*(r*0.92-0.005));
+      reg(sp, ["spiracle","abdomen"], ex.clone().add(V(0,0,s*0.12)));
+    }
+  }
+  if (i === 1){
+    for (const s of [1,-1]){
+      reg(ell(0.12,0.15,0.03,"#f1e3b0", V(x-0.02, y+0.14, s*(r*0.92-0.02)),{roughness:0.3,bumpMap:null}), ["tympanum","abdomen"], ex.clone().add(V(0,0,s*0.35)));
+    }
+  }
+  lastX = x; lastR = r;
+}
+for (const s of [1,-1]){
+  const a = V(lastX-0.12, TY-0.05, s*0.08), b = a.clone().add(V(-0.38, 0.08, s*0.12));
+  reg(seg(a, b, 0.05, 0.015, 0, "#c47f24"), ["cercus","abdomen"], abdBase.clone().add(V(-2.0,0,s*0.3)));
+}
+
+/* terminalia: segment 11 (epiproct + paraprocts) and the sex-specific genital parts */
+let termMeshes = [], sex = "female";
+function buildTerminalia(k){
+  const gone = new Set(termMeshes);
+  for (const m of termMeshes){ root.remove(m); m.geometry.dispose(); }
+  for (let i=pickables.length-1;i>=0;i--) if (gone.has(pickables[i])) pickables.splice(i,1);
+  for (let i=movers.length-1;i>=0;i--) if (gone.has(movers[i])) movers.splice(i,1);
+  termMeshes = [];
+  const add = (mesh, tags, ex) => { reg(mesh, tags, ex); termMeshes.push(mesh); return mesh; };
+  const X = lastX, Y = TY - 0.12, tipEx = abdBase.clone().add(V(-1.75,0,0));
+  add(ell(0.15,0.035,0.09,"#c98a2a",V(X-0.2,Y+0.06,0)), ["epiproct","abdomen"], tipEx.clone().add(V(0,0.3,0)));
+  for (const s of [1,-1]) add(ell(0.11,0.05,0.045,"#b97a22",V(X-0.18,Y-0.07,s*0.075)), ["paraproct","abdomen"], tipEx.clone().add(V(0,-0.15,s*0.25)));
+  if (k === "female"){
+    const OV = ["ovipositor","abdomen"];
+    for (const s of [1,-1]){
+      const valve = (pts, ex) => { for (let i=0;i<pts.length-1;i++) add(seg(pts[i], pts[i+1].clone().lerp(pts[i], 0.05), 0.04-0.009*i, 0.034-0.009*i, 0, i === pts.length-2 ? "#5a2e12" : "#8a4a1c"), OV, ex); };
+      valve([V(X-0.08,Y+0.02,s*0.05), V(X-0.3,Y+0.03,s*0.05), V(X-0.45,Y+0.08,s*0.045), V(X-0.53,Y+0.17,s*0.04)], tipEx.clone().add(V(-0.35,0.25,s*0.15)));
+      valve([V(X-0.08,Y-0.11,s*0.05), V(X-0.3,Y-0.15,s*0.05), V(X-0.45,Y-0.21,s*0.045), V(X-0.51,Y-0.3,s*0.04)], tipEx.clone().add(V(-0.35,-0.35,s*0.15)));
+    }
+  } else {
+    const sg = ell(0.25,0.075,0.14,"#d9a040",V(X-0.2,Y-0.12,0)); sg.rotation.z = -0.45;
+    add(sg, ["subgenital-plate","abdomen"], tipEx.clone().add(V(-0.2,-0.4,0)));
+  }
+}
+buildTerminalia(sex);
+
+/* head orientation: the whole head (with antennae and mouthparts) turns about its centre */
+let headPose = "hypognathous";
+function applyHeadPose(){
+  const q = new THREE.Quaternion().setFromAxisAngle(V(0,0,1), HEADPOSE[headPose].a);
+  for (const m of movers){
+    const inf = INFO[m.userData.tags[0]];
+    if (m.userData.sp === "weevil" || !inf || (inf.g !== "head" && inf.g !== "mouth")) continue;
+    const u = m.userData;
+    if (!u.hp) u.hp = {pos:u.basePos.clone(), q:m.quaternion.clone(), ex:u.ex.clone()};
+    u.basePos.copy(u.hp.pos).sub(H).applyQuaternion(q).add(H);
+    m.quaternion.copy(q).multiply(u.hp.q);
+    u.ex.copy(u.hp.ex).sub(headEx).applyQuaternion(q).add(headEx);
+  }
+}
+applyHeadPose();
+
+/* ================= specimen 2: weevil (Coleoptera: Curculionidae) =================
+   Built with the same colour code per body region as the grasshopper; kept in its own group. */
+let species = "grasshopper";
+const SPECIES = {
+  grasshopper:{n:1, th:"ตั๊กแตน", en:"Grasshopper · Orthoptera: Acrididae",
+    intro:"ลำตัวแมลงแบ่งเป็น 3 ส่วน คือ ส่วนหัว ส่วนอก และส่วนท้อง สีของโมเดลบอกว่าแต่ละชิ้นอยู่ในส่วนไหน",
+    home:{pos:V(4.2,2.8,8.6), target:V(-0.6,-0.25,0)}},
+  weevil:{n:2, th:"ด้วงงวง", en:"Weevil · Coleoptera: Curculionidae",
+    intro:"ด้วงงวงมีหัวยื่นยาวเป็นงวง หนวดแบบข้อศอกปลายเป็นตุ้ม และปีกคู่หน้าแข็งเป็น elytra คลุมอกปล้องกลาง อกปล้องท้าย และส่วนท้องไว้ ตัวอย่างศัตรูพืชในไทย เช่น ด้วงงวงมะพร้าวและด้วงงวงข้าว โมเดลนี้เป็นด้วงงวงทั่วไป ใช้สีตามส่วนของลำตัวแบบเดียวกับตั๊กแตน",
+    home:{pos:V(3.9,2.4,7.2), target:V(0.1,-0.5,0)}}
+};
+const INFO_W = {
+  "cranium":{t:"หัวของด้วงงวงเล็กและกลม จมอยู่ใน pronotum บางส่วน ด้านหน้ายืดยาวเป็นงวง ไม่มีตาเดี่ยว", ref:null, src:G2},
+  "antenna":{en:"Antenna — geniculate, clubbed", ref:"20", t:"หนวดแบบข้อศอกปลายเป็นตุ้ม ติดอยู่ที่ด้านข้างของงวง ประกอบด้วย scape ที่ยาวมาก ปล้องเล็กๆ ต่อกันเป็นสาย (funicle) และตุ้มหนวด (club)"},
+  "scape":{t:"ปล้องแรกของหนวดที่ยาวมาก พับเก็บเข้าร่อง scrobe ข้างงวงได้ ปล้องถัดไปหักทำมุมกับ scape เป็นข้อศอก"},
+  "flagellum":{th:"เส้นหนวด (funicle)", en:"Flagellum — funicle", t:"ปล้องเล็กๆ ที่ต่อกันเป็นสายระหว่าง pedicel กับตุ้มหนวด ในด้วงงวงเรียกว่า funicle"},
+  "mandible":{t:"กรามขนาดเล็ก 1 คู่ที่ปลายงวง ใช้กัดเจาะเนื้อเยื่อพืช ส่วนอื่นของปากแบบกัดกินมีขนาดเล็กมากและอยู่ที่ปลายงวงเช่นกัน"},
+  "prothorax":{t:"อกปล้องแรก มีขาคู่หน้า เป็นปล้องอกปล้องเดียวที่มองเห็นจากด้านบน"},
+  "pronotum":{t:"แผ่นหลังของอกปล้องแรกที่ใหญ่และโค้งคลุมทั้งด้านบนและด้านข้าง", ref:"37"},
+  "mesothorax":{t:"อกปล้องกลาง มีขาคู่กลางและปีก elytra ด้านบนถูกปีกคลุมไว้ เหลือให้เห็นเพียง scutellum"},
+  "metathorax":{t:"อกปล้องท้าย มีขาคู่หลังและปีกคู่หลังที่ใช้บิน ด้านบนถูกปีก elytra คลุมไว้"},
+  "scutellum":{th:"แผ่นสามเหลี่ยมกลางหลัง", t:"แผ่นสามเหลี่ยมเล็กๆ ของ mesothorax ที่โผล่ให้เห็นระหว่างโคนปีก elytra ทั้งสองข้าง แผ่นหลังของอกปล้องที่มีปีกแบ่งเป็น prescutum, scutum และ scutellum"},
+  "tergum":{t:"แผ่นด้านบนของอก tergum ของอกปล้องกลางและปล้องท้ายถูกปีก elytra คลุมไว้ กด “แยกชิ้นส่วน” เพื่อดู"},
+  "sternum":{t:"แผ่นด้านล่างของอก ขาแต่ละคู่ติดอยู่ที่ด้านล่างของปล้องนั้น"},
+  "forewing":{en:"Forewing — elytra", ref:"38, 41", t:"ปีกคู่หน้าแข็งเป็นแบบ elytra ไม่ใช้บิน แต่คลุมปกป้องปีกคู่หลังและส่วนท้อง เมื่อหุบ ขอบด้านในของปีกทั้งสองข้างชนกันเป็นเส้นกลางหลัง (elytral suture) ผิวปีกมีร่องตามยาว (striae)"},
+  "hindwing":{t:"ปีกคู่หลังเป็นเยื่อบาง (membrane) ใช้บิน พับเก็บไว้ใต้ปีก elytra กด “แยกชิ้นส่วน” เพื่อดูตอนกาง"},
+  "leg-fore":{t:"ติดกับ prothorax เป็นขาเดิน (walking leg)"},
+  "leg-mid":{t:"ติดกับ mesothorax เป็นขาเดิน (walking leg)"},
+  "leg-hind":{en:"Hindleg — walking leg", t:"ติดกับ metathorax เป็นขาเดิน (walking leg) ไม่ได้ขยายใหญ่เป็นขากระโดดเหมือนตั๊กแตน"},
+  "femur":{t:"ปล้องขาที่ใหญ่ที่สุด femur ของด้วงงวงป่องตรงกลางคล้ายกระบอง"},
+  "tarsus":{t:"ด้วงงวงมี tarsus 5 ปล้อง แต่ปล้องที่ 4 เล็กมากและซ่อนอยู่ระหว่างพูของปล้องที่ 3 ซึ่งแผ่ออกเป็น 2 พู จึงดูเหมือนมีเพียง 4 ปล้อง ด้านล่างมีขนหนาช่วยเกาะ"},
+  "pretarsus":{t:"ปล้องปลายสุดของขา มีเล็บ (claw) 1 คู่"},
+  "abdomen":{t:"ส่วนท้องของด้วงงวงถูกปีก elytra คลุมด้านบนเกือบทั้งหมด tergum ด้านบนจึงบางและอ่อน ด้านล่างเป็นแผ่นแข็ง (ventrites) 5 แผ่น ปลายท้องมี pygidium และไม่มี cerci"},
+  "spiracle":{t:"รูหายใจที่ด้านข้างของ tergum ส่วนท้อง ซึ่งถูกปีก elytra คลุมอยู่ กด “แยกชิ้นส่วน” เพื่อดู"}
+};
+function infoOf(k){ const b = INFO[k]; return species === "weevil" && INFO_W[k] ? Object.assign({}, b, INFO_W[k]) : b; }
+
+const wroot = new THREE.Group(); wroot.visible = false; scene.add(wroot);
+(function buildWeevil(){
+  const p0 = pickables.length, w0 = wings.length;
+  const C = {head:"#4a7fd6", snout:"#5b8ee0", eye:"#1f2c55", groove:"#1d2f5c", scape:"#b8862a", ped:"#e5b84f", fun:"#d9a43a", club:"#c98d22",
+             md:"#8f3b2c", pron:"#3f8f4a", st:"#2f7a42", terg:"#4f9c55", scut:"#2c6e3a", tergA:"#ecc887", vent:["#d39130","#e0a33c"], pyg:"#c98a2a", sp:"#3a2a12"};
+  /* head + rostrum */
+  const HC = V(1.45,-0.12,0), hEx = V(1.25,0.35,0);
+  reg(ell(0.34,0.36,0.36,C.head,HC), ["cranium"], hEx);
+  for (const s of [1,-1]) reg(ell(0.09,0.17,0.07,C.eye,HC.clone().add(V(0.17,0,s*0.3)),{roughness:0.25,bumpScale:0.06}), ["compound-eye"], hEx.clone().add(V(0,0.15,s*0.6)));
+  const rc = new THREE.CatmullRomCurve3([V(1.6,-0.08,0),V(2.05,-0.16,0),V(2.45,-0.36,0),V(2.78,-0.72,0)]);
+  const snEx = hEx.clone().add(V(0.5,-0.1,0));
+  reg(new THREE.Mesh(new THREE.TubeGeometry(rc,48,0.105,16,false), makeMat(C.snout)), ["weevil-snout"], snEx);
+  const tipP = rc.getPoint(1), tipD = rc.getTangent(1).normalize();
+  reg(new THREE.Mesh(new THREE.SphereGeometry(0.105,16,12), makeMat(C.snout)), ["weevil-snout"], snEx).position.copy(tipP);
+  movers[movers.length-1].userData.basePos.copy(tipP);
+  for (const s of [1,-1]){
+    reg(ell(0.06,0.075,0.045,C.md,tipP.clone().addScaledVector(tipD,0.07).add(V(0,0,s*0.045))), ["mandible"], snEx.clone().add(V(0.45,-0.45,s*0.25)));
+    // scrobe: groove along the side of the rostrum, running back from the antennal socket
+    const gp = []; for (let k=0;k<=8;k++){ const t = 0.62 - 0.4*k/8; gp.push(rc.getPoint(t).add(V(0,-0.02,s*0.1))); }
+    reg(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(gp),24,0.02,6,false), makeMat(C.groove,{bumpMap:null})), ["scrobe"], snEx.clone().add(V(0,0,s*0.12)));
+    // antenna: long scape, elbow, funicle, club
+    const aEx = snEx.clone().add(V(0,0.45,s*0.65));
+    const I = rc.getPoint(0.6).add(V(0,0,s*0.1)), E = I.clone().add(V(-0.45,0.28,s*0.3));
+    reg(seg(I, E, 0.04, 0.05, 0, C.scape), ["scape","antenna"], aEx.clone().add(V(0,-0.1,-s*0.15)));
+    const F = E.clone().add(V(0.42,0.28,s*0.42)), dir = F.clone().sub(E).normalize();
+    const n = 7; let prev = E.clone();
+    for (let i=0;i<n;i++){
+      const nx = E.clone().lerp(F, (i+1)/n), b = nx.clone().lerp(prev, 0.12);
+      reg(seg(prev, b, i ? 0.03 : 0.04, i ? 0.034 : 0.038, 0, i ? (i%2 ? C.fun : C.ped) : C.ped), i ? ["flagellum","antenna"] : ["pedicel","antenna"], aEx);
+      prev = nx;
+    }
+    const club = ell(0.07,0.13,0.07,C.club,F.clone().addScaledVector(dir,0.11));
+    club.quaternion.setFromUnitVectors(UP, dir);
+    reg(club, ["antennal-club","flagellum","antenna"], aEx.clone().addScaledVector(dir,0.15));
+  }
+  /* prothorax: large pronotum over a small prosternum */
+  const PN = V(0.78,-0.12,0), side = {side:THREE.DoubleSide};
+  const pro = new THREE.Mesh(band(0,0.62), makeMat(C.pron, side)); pro.scale.set(0.66,0.6,0.6); pro.position.copy(PN);
+  reg(pro, ["pronotum","tergum","prothorax"], V(0.45,0.75,0));
+  const pst = new THREE.Mesh(band(0.62,1), makeMat(C.st, side)); pst.scale.set(0.66,0.6,0.6); pst.position.copy(PN);
+  reg(pst, ["sternum","prothorax"], V(0.45,-0.55,0));
+  /* meso- and metathorax, hidden under the elytra */
+  for (const [id, c, sc, ex] of [["mesothorax",V(0.02,-0.24,0),V(0.3,0.44,0.46),V(0,0,0)], ["metathorax",V(-0.48,-0.25,0),V(0.38,0.47,0.5),V(-0.3,0,0)]]){
+    const tg = new THREE.Mesh(band(0,0.5), makeMat(C.terg, side)); tg.scale.copy(sc); tg.position.copy(c);
+    reg(tg, ["tergum", id], ex.clone().add(V(0,0.65,0)));
+    const sn = new THREE.Mesh(band(0.5,1), makeMat(C.st, side)); sn.scale.copy(sc); sn.position.copy(c);
+    reg(sn, ["sternum", id], ex.clone().add(V(0,-0.55,0)));
+  }
+  const scu = ell(0.11,0.03,0.08,C.scut,V(0.16,0.33,0)); scu.rotation.z = -0.12;
+  reg(scu, ["scutellum","mesothorax"], V(0.1,1.15,0));
+  /* abdomen: soft tergites on top, five hard ventrites below, pygidium at the tip.
+     The ellipsoid is built with its pole along x so that theta slices it into segments. */
+  const AB = V(-1.55,-0.3,0), AS = V(1.05,0.46,0.54);
+  const abdPart = (ph0, phL, th0, thL, color, tags, ex, k) => {
+    const g = new THREE.SphereGeometry(1, 36, 10, ph0*Math.PI, phL*Math.PI, th0*Math.PI, thL*Math.PI); g.rotateZ(-Math.PI/2);
+    const m = new THREE.Mesh(g, makeMat(color, side)); m.scale.copy(AS).multiplyScalar(k||1); m.position.copy(AB);
+    return reg(m, tags, ex);
+  };
+  abdPart(1.5, 1, 0, 1, C.tergA, ["abdomen"], V(-0.9,0.45,0));
+  const VR = [0.12,0.38,0.55,0.68,0.8,0.93];
+  for (let i=0;i<5;i++) abdPart(0.5, 1, VR[i], VR[i+1]-VR[i]-0.006, C.vent[i%2], ["ventrite","abdomen"], V(-0.9-0.12*i,-0.6,0), 1.012);
+  reg(ell(0.09,0.27,0.3,C.pyg,V(-2.55,-0.3,0)), ["pygidium","abdomen"], V(-1.5,0,0));
+  for (let i=0;i<7;i++){
+    const x = -0.75 - i*0.27, y = -0.1, a = (x-AB.x)/AS.x, b = (y-AB.y)/AS.y, zz = AS.z*Math.sqrt(Math.max(0, 1-a*a-b*b));
+    for (const s of [1,-1]){
+      const sp = new THREE.Mesh(new THREE.SphereGeometry(0.03,10,8), makeMat(C.sp,{bumpMap:null})); sp.position.set(x, y, s*zz);
+      reg(sp, ["spiracle","abdomen"], V(-0.9,0.45,s*0.2));
+    }
+  }
+  /* wings: domed, striate elytra meeting at the midline; membranous hind wings folded beneath */
+  const EL = 2.75;
+  const wElyShape = wingShape([V(0,0),V(EL*0.5,-0.01),V(EL*0.95,0.02),V(EL,0.12),V(EL*0.93,0.42),V(EL*0.7,0.74),V(EL*0.35,0.84),V(EL*0.05,0.8),V(0,0.5)]);
+  const stria = (function(){
+    const c = document.createElement("canvas"); c.width = c.height = 256; const g = c.getContext("2d");
+    g.fillStyle = "#ffffff"; g.fillRect(0,0,256,256);
+    for (let k=1;k<10;k++){ const y = 256*k/10; g.fillStyle = "rgba(20,10,40,0.55)"; g.fillRect(0, y-1.5, 256, 3);
+      for (let x=4;x<256;x+=9){ g.beginPath(); g.arc(x, y, 2.2, 0, 7); g.fill(); } }
+    const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; return t;
+  })();
+  const WL = 2.2;
+  const wHwShape = wingShape([V(0,-0.04),V(WL*0.35,-0.15),V(WL*0.8,-0.2),V(WL,-0.04),V(WL*0.97,0.32),V(WL*0.8,0.8),V(WL*0.55,1.05),V(WL*0.3,1.0),V(WL*0.1,0.6),V(0,0.12)]);
+  for (const s of [1,-1]){
+    addWing({parts:[{geo:wingGeo(wHwShape, WL, 0, 1), color:"#b9a3ef", opacity:0.5, vein:"#5b45a6", veinGeo:veins(wHwShape, WL, [0.05,0.16,0.3,0.45,0.6,0.75,0.9], 40, 29), tags:["hindwing","metathorax"]}],
+      hinge:V(-0.2,0.24,s*0.16), ex:V(-0.7,0.8,s*0.7), restLen:V(-1,0,s*0.03), restWid:V(0,-0.3,s*0.95), spLen:V(-0.45,0.1,s), spWid:V(-1,0,0), sv0:0.2});
+    addWing({parts:[{geo:wingGeo(wElyShape, EL, 0, 1, 0.3, s), color:"#3d2a7a", tags:["forewing","mesothorax"], mat:{map:stria, roughness:0.3, metalness:0.2}}],
+      hinge:V(0.22,0.3,s*0.005), ex:V(0.05,0.75,s*0.6), restLen:V(-1,-0.04,0), restWid:V(0,-0.78,s*0.62), spLen:V(-0.3,0.6,s*0.75), spWid:V(1,0.15,0), sv0:1});
+  }
+  /* legs: walking legs with clubbed femora and a bilobed third tarsomere */
+  const LP = [["leg-fore","prothorax",V(0.92,-0.62,0),0.55,V(0.45,-0.4,0)], ["leg-mid","mesothorax",V(0.05,-0.66,0),0.05,V(0,-0.45,0)], ["leg-hind","metathorax",V(-0.5,-0.7,0),-0.5,V(-0.45,-0.45,0)]];
+  for (const [pid, seg0, B0, dx, ex0] of LP){
+    for (const s of [1,-1]){
+      const B = B0.clone().add(V(0,0,s*(pid === "leg-fore" ? 0.18 : pid === "leg-mid" ? 0.28 : 0.38)));
+      const at = (x,y,z) => B.clone().add(V(x,y,s*z));
+      const exk = k => ex0.clone().add(V(0,-0.15*k,s*(0.6+0.22*k)));
+      const TG = name => [name, pid];
+      reg(ell(0.11,0.1,0.11,LEGC.coxa,B), TG("coxa"), exk(0));
+      const F0 = at(dx*0.05,-0.04,0.2), K = at(dx*0.6,0.1,0.85), A = at(dx*0.95,-0.86,1.15);
+      reg(seg(B, F0, 0.08, 0.07, 0, LEGC.trochanter), TG("trochanter"), exk(1));
+      reg(seg(F0, K, 0.07, 0.06, 0.07, LEGC.femur), TG("femur"), exk(2));
+      reg(seg(K, A, 0.055, 0.065, 0, LEGC.tibia), TG("tibia"), exk(3));
+      const td = V(dx*0.7, -0.08, s*0.45).normalize();
+      let q = A.clone(); const L = [0.1,0.09,0.09,0.13], R = [0.05,0.055,0.08,0.03];
+      for (let i=0;i<4;i++){
+        const nq = q.clone().addScaledVector(td, L[i]);
+        const m = reg(seg(q, nq.clone().lerp(q,0.08), R[i], i === 2 ? R[i]*1.05 : R[i]*0.95, 0, LEGC.tarsus), TG("tarsus"), exk(4));
+        if (i === 2) m.scale.set(1.25, 1, 0.55); // bilobed, flattened third tarsomere
+        q = nq;
+      }
+      for (const k of [1,-1]){
+        const cd = td.clone().add(V(0,-0.5,0)).add(V(0,0,k*0.35)).normalize();
+        reg(seg(q, q.clone().addScaledVector(cd, 0.09), 0.014, 0.004, 0, LEGC.pretarsus), TG("pretarsus"), exk(5));
+      }
+    }
+  }
+  /* move everything just built into the weevil group */
+  for (let i=p0;i<pickables.length;i++){ const m = pickables[i]; m.userData.sp = "weevil"; if (m.parent === root){ root.remove(m); wroot.add(m); } }
+  for (let i=w0;i<wings.length;i++){ const g = wings[i]; g.userData.weevil = true; root.remove(g); wroot.add(g); }
+})();
+
+/* ================= state ================= */
+let explodeT = 0, explodeTarget = 0;
+let selKey = null, anchorMesh = null, hoverMesh = null, fade = true;
+const byTag = {};
+function rebuildIndex(){
+  for (const k in byTag) delete byTag[k];
+  for (const m of pickables){ if ((m.userData.sp || "grasshopper") !== species) continue; for (const t of m.userData.tags) (byTag[t] = byTag[t] || []).push(m); }
+}
+rebuildIndex();
+
+function applyExplode(t){
+  for (const m of movers) m.position.copy(m.userData.basePos).addScaledVector(m.userData.ex, t);
+  for (const g of wings){
+    const u = g.userData;
+    g.position.copy(u.hinge).addScaledVector(u.ex, t);
+    g.quaternion.slerpQuaternions(u.qr, u.qs, t);
+    g.scale.set(1, u.sv0 + (1-u.sv0)*t, 1);
+  }
+}
+const SEL_EM = new THREE.Color("#5a4100"), HOV_EM = new THREE.Color("#202020"), NO_EM = new THREE.Color(0);
+function refreshLook(){
+  for (const m of pickables){
+    const mat = m.material, tags = m.userData.tags;
+    const isSel = selKey && tags.includes(selKey);
+    const isHov = hoverMesh && hoverMesh.userData.tags[0] === tags[0] && !isSel;
+    mat.emissive.copy(isSel ? SEL_EM : isHov ? HOV_EM : NO_EM);
+    const dim = fade && selKey && !isSel;
+    const base = mat.userData.baseOpacity;
+    const op = dim ? Math.min(m.userData.ctx ? 0.4 : 0.12, base) : base;
+    const transp = op < 1;
+    if (mat.transparent !== transp){ mat.transparent = transp; mat.needsUpdate = true; }
+    mat.opacity = op; mat.depthWrite = !transp;
+    m.castShadow = !dim;
+    if (m.userData.veins){ const lm = m.userData.veins.material; lm.opacity = dim ? (m.userData.ctx ? 0.4 : 0.08) : lm.userData.baseOpacity; }
+  }
+}
+
+/* ================= picking ================= */
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+function pick(ev){
+  const r = renderer.domElement.getBoundingClientRect();
+  ndc.set(((ev.clientX - r.left)/r.width)*2-1, -((ev.clientY - r.top)/r.height)*2+1);
+  ray.setFromCamera(ndc, camera);
+  const vis = pickables.filter(m => m.visible && m.userData.tags.length && m.material.opacity > 0.2 &&(m.userData.sp || "grasshopper") === species);
+  const hit = ray.intersectObjects(vis, false)[0];
+  return hit ? hit.object : null;
+}
+const tip = document.getElementById("tip");
+let downAt = null;
+renderer.domElement.addEventListener("pointerdown", e => { downAt = {x:e.clientX, y:e.clientY}; });
+renderer.domElement.addEventListener("pointerup", e => {
+  if (!downAt) return;
+  const moved = Math.hypot(e.clientX-downAt.x, e.clientY-downAt.y); downAt = null;
+  if (moved > 6) return;
+  const m = pick(e);
+  if (quiz.on) return quizAnswer(m);
+  if (m) select(m.userData.tags[0], m); else select(null);
+});
+renderer.domElement.addEventListener("pointermove", e => {
+  if (e.pointerType !== "mouse" || e.buttons) { tip.hidden = true; return; }
+  const m = pick(e);
+  if (m !== hoverMesh){ hoverMesh = m; refreshLook(); }
+  renderer.domElement.style.cursor = m ? "pointer" : "grab";
+  if (m && !quiz.on){
+    const inf = infoOf(m.userData.tags[0]), r = stage.getBoundingClientRect();
+    tip.textContent = inf.th + " · " + inf.en;
+    tip.style.transform = "translate(" + (e.clientX - r.left + 14) + "px," + (e.clientY - r.top + 14) + "px)";
+    tip.hidden = false;
+  } else tip.hidden = true;
+});
+renderer.domElement.addEventListener("pointerleave", () => { tip.hidden = true; if (hoverMesh){ hoverMesh = null; refreshLook(); } });
+controls.addEventListener("start", () => { camTween = null; if (controls.autoRotate) setRotate(false); });
+
+/* ================= selection & panel ================= */
+const infoEl = document.getElementById("info");
+const tag3d = document.getElementById("tag3d");
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function closestMesh(key){
+  let best = null, bd = Infinity; const c = new THREE.Vector3();
+  for (const m of byTag[key] || []){ m.getWorldPosition(c); const d = c.distanceTo(camera.position); if (d < bd){ bd = d; best = m; } }
+  return best;
+}
+function select(k, mesh){
+  selKey = k; anchorMesh = k ? (mesh || closestMesh(k)) : null;
+  refreshLook(); renderInfo();
+  document.querySelectorAll(".part[data-k]").forEach(b => b.setAttribute("aria-pressed", b.dataset.k === k ? "true" : "false"));
+}
+function renderInfo(){
+  if (!selKey){
+    infoEl.innerHTML =
+      '<span class="chip">ตัวอย่างศึกษา</span><h2>'+SPECIES[species].th+'</h2><div class="en">'+SPECIES[species].en+'</div>' +
+      '<p>'+SPECIES[species].intro+'</p>' +
+      '<ul class="legend">' + Object.values(GROUPS).map(g => '<li><span class="sw" style="background:'+g.color+'"></span>'+g.th+' <span class="en" style="font-family:var(--f-mono);font-size:11px;color:var(--muted)">'+g.en+'</span></li>').join("") + '</ul>' +
+      '<p class="hint">คลิกที่ชิ้นส่วนบนโมเดลหรือในรายการด้านล่างเพื่อดูชื่อและหน้าที่ · ลากเพื่อหมุน · เลื่อนล้อเมาส์หรือใช้สองนิ้วเพื่อซูม · กด “แยกชิ้นส่วน” เพื่อดูชิ้นที่ซ่อนอยู่</p>';
+    return;
+  }
+  const inf = infoOf(selKey), g = GROUPS[inf.g];
+  infoEl.innerHTML =
+    '<span class="chip"><span class="sw" style="background:'+g.color+'"></span>'+g.th+' · '+g.en+'</span>' +
+    '<h2>'+esc(inf.th)+'</h2><div class="en">'+esc(inf.en)+'</div><p>'+esc(inf.t)+'</p>' +
+    '<div class="ref">'+(inf.ref ? 'สไลด์ 02 Insect Morphology หน้า '+inf.ref : inf.src ? 'เนื้อหาเสริมจาก '+esc(inf.src) : 'เนื้อหาเสริม ไม่มีในสไลด์ชุดนี้')+'</div>' +
+    (species !== "grasshopper" ? "" : LEVEL === 1 ? sexInfoHtml()
+      : headInfoHtml() + antInfoHtml() + legInfoHtml() + (LEVEL >= 3 ? pretInfoHtml() : "") + mouthInfoHtml() + wingInfoHtml() + sexInfoHtml()) +
+    '<button class="linkbtn" type="button" id="clearSel">ล้างการเลือก</button>';
+  document.getElementById("clearSel").onclick = () => select(null);
+}
+function antInfoHtml(){
+  if (!["antenna","scape","pedicel","flagellum"].includes(selKey)) return "";
+  const a = ANT[antType];
+  return '<div class="antinfo"><span class="chip">รูปร่างหนวดที่แสดงอยู่ · แบบที่ '+a.n+' จาก 13</span>' +
+    '<h4>หนวดแบบ'+esc(a.th)+' <span class="en">'+a.en+'</span></h4>' +
+    '<p>'+esc(a.t)+'</p><p><b>พบใน</b> '+esc(a.ex)+'</p>' +
+    '<div class="ref">สไลด์ 02 Insect Morphology หน้า 11, '+a.ref+'</div>' +
+    (antType !== "filiform" ? '<p class="note">แสดงบนหัวตั๊กแตนเพื่อเปรียบเทียบรูปร่างเท่านั้น หนวดจริงของตั๊กแตนเป็นแบบเส้นด้าย (filiform)</p>' : '') +
+    '</div>';
+}
+const LEG_KEYS = ["coxa","trochanter","femur","tibia","tarsus","pretarsus","leg-fore","leg-mid","leg-hind","pollen-basket","comb","rake","pollen-press"];
+function legInfoHtml(){
+  if (!LEG_KEYS.includes(selKey)) return "";
+  const a = LEGTYPES[legType];
+  const pairTh = a.pair === "leg-fore" ? "ขาคู่หน้า" : "ขาคู่หลัง";
+  const note = legType === "jumping" ? "นี่คือขาจริงของตั๊กแตน ขาคู่หน้าและคู่กลางเป็นขาเดิน ขาคู่หลังเป็นขากระโดด"
+    : legType === "walking" ? "ตอนนี้ขาทั้ง 3 คู่เป็นขาเดิน ตั๊กแตนจริงมีขาคู่หลังเป็นขากระโดด"
+    : "ใส่แทน" + pairTh + "ของตั๊กแตนเพื่อเปรียบเทียบรูปร่างเท่านั้น";
+  return '<div class="antinfo"><span class="chip">ชนิดขาที่แสดงอยู่ · แบบที่ '+a.n+' จาก 8 · '+pairTh+'</span>' +
+    '<h4>'+esc(a.th)+' <span class="en">'+a.en+'</span></h4>' +
+    '<p>'+esc(a.t)+'</p><p><b>พบใน</b> '+esc(a.ex)+'</p>' +
+    '<div class="ref">สไลด์ 02 Insect Morphology หน้า '+a.ref+'</div>' +
+    '<p class="note">'+note+'</p></div>';
+}
+let camTween = null;
+function focusAt(tgt, off){
+  const pos = tgt.clone().add(off.clone().multiplyScalar(1 + 0.45*explodeT));
+  if (controls.target.distanceTo(tgt) < 0.6 && camera.position.distanceTo(pos) < 1.5) return;
+  setRotate(false);
+  camTween = {t: reduceMotion ? 1 : 0, ft:controls.target.clone(), fp:camera.position.clone(), tt:tgt, tp:pos};
+}
+function focusHead(){ focusAt(H.clone().add(V(0.75,0.75,0)).addScaledVector(headEx, explodeT), V(2.4,1.1,3.8)); }
+function setPretType(k){
+  pretType = k; buildLegs(legType); rebuildIndex(); hoverMesh = null; refreshPartButtons();
+  document.querySelectorAll(".part[data-pret]").forEach(b => b.setAttribute("aria-pressed", b.dataset.pret === k ? "true" : "false"));
+  select(PRETTYPES[k].sel);
+  const w = new THREE.Vector3(); if (anchorMesh){ anchorMesh.getWorldPosition(w); focusAt(w, V(0.55,0.35,1.15)); }
+}
+function pretInfoHtml(){
+  if (!["pretarsus","claw","arolium","pulvillus","empodium"].includes(selKey)) return "";
+  const a = PRETTYPES[pretType];
+  return '<div class="antinfo"><span class="chip">ปลายเท้าที่แสดงอยู่ · แบบที่ '+a.n+' จาก 3</span>' +
+    '<h4>'+esc(a.th)+' <span class="en">'+a.en+'</span></h4>' +
+    '<p>'+esc(a.t)+'</p><p><b>พบใน</b> '+esc(a.ex)+'</p>' +
+    '<div class="ref">เนื้อหาเสริมจาก '+esc(a.src)+'</div>' +
+    '<p class="note">'+(pretType === "arolium" ? "นี่คือปลายเท้าจริงของตั๊กแตน" : "ใส่บนขาตั๊กแตนเพื่อเปรียบเทียบเท่านั้น")+' · ปลายเท้ามีขนาดเล็กมาก ซูมเข้าไปดูที่ปลายขา</p></div>';
+}
+function setLegType(k){
+  legType = k; buildLegs(k); rebuildIndex(); hoverMesh = null; refreshPartButtons();
+  document.querySelectorAll(".part[data-leg]").forEach(b => b.setAttribute("aria-pressed", b.dataset.leg === k ? "true" : "false"));
+  const pair = LEGTYPES[k].pair;
+  select(pair);
+  if (pair === "leg-fore") focusAt(V(1.45,-0.75,0.4).addScaledVector(THX[0].ex, explodeT), V(2.6,0.25,4.2));
+  else focusAt(V(-1.0,-0.6,0.4).addScaledVector(THX[2].ex, explodeT), V(1.0,0.9,5.4));
+}
+function mouthInfoHtml(){
+  if (!INFO[selKey] || INFO[selKey].g !== "mouth") return "";
+  const a = MOUTHTYPES[mouthType];
+  const absent = MOUTH_MAIN.filter(k => !byTag[k]).map(k => INFO[k].th + " (" + INFO[k].en + ")");
+  return '<div class="antinfo"><span class="chip">ชนิดปากที่แสดงอยู่ · '+(a.extra ? 'แบบเสริม' : 'แบบที่ '+a.n+' จาก 7')+'</span>' +
+    '<h4>'+esc(a.th)+' <span class="en">'+a.en+'</span></h4>' +
+    '<p>'+esc(a.t)+'</p><p><b>พบใน</b> '+esc(a.ex)+'</p>' +
+    (absent.length ? '<p><b>ไม่มีหรือมองไม่เห็นในแบบนี้</b> '+esc(absent.join(", "))+'</p>' : '') +
+    '<div class="ref">'+(a.ref ? 'สไลด์ 02 Insect Morphology หน้า '+a.ref : 'เนื้อหาเสริมจาก '+esc(a.src))+'</div>' +
+    (mouthType === "mask" ? '<p class="note">แสดงตอนยื่นหน้ากากออกไปจับเหยื่อ ขณะพักจะพับเก็บใต้หัว · ใส่บนหัวตั๊กแตนตัวเต็มวัยเพื่อเปรียบเทียบเท่านั้น ปากแบบนี้พบเฉพาะในตัวอ่อนที่อาศัยในน้ำ ตัวเต็มวัยของแมลงปอมีปากแบบกัดกินธรรมดา</p>' : '') +
+    '<p class="note">สีของแต่ละชิ้นบอกว่าเปลี่ยนมาจากส่วนใดของปากแบบกัดกิน' +
+    (mouthType !== "chewing" ? ' · ใส่บนหัวตั๊กแตนเพื่อเปรียบเทียบเท่านั้น ตั๊กแตนจริงมีปากแบบกัดกิน' : '') + '</p></div>';
+}
+function refreshPartButtons(){
+  document.querySelectorAll(".part[data-k]").forEach(b => { b.disabled = !byTag[b.dataset.k]; });
+}
+function setMouthType(k){
+  mouthType = k; buildMouth(k); applyHeadPose(); rebuildIndex(); hoverMesh = null; refreshPartButtons();
+  document.querySelectorAll(".part[data-mouth]").forEach(b => b.setAttribute("aria-pressed", b.dataset.mouth === k ? "true" : "false"));
+  select(MOUTHTYPES[k].sel);
+  if (k === "mask") focusAt(H.clone().add(V(0.55,-1.2,0)).addScaledVector(headEx, explodeT), V(2.2,0.0,3.6));
+  else focusAt(H.clone().add(V(0.3,-0.9,0)).addScaledVector(headEx, explodeT), V(3.0,0.1,3.4));
+}
+(function buildMouthGrid(){
+  const host = document.getElementById("mouthGrid");
+  for (const [k, a] of Object.entries(MOUTHTYPES)){
+    const b = document.createElement("button"); b.type = "button"; b.className = "part"; b.dataset.mouth = k;
+    b.setAttribute("aria-pressed", k === mouthType ? "true" : "false");
+    b.innerHTML = '<span class="num">'+a.n+'</span><span>'+esc(a.th.replace("ปากแบบ",""))+'<small>'+a.en.replace(" type","")+'</small></span>';
+    b.onclick = () => setMouthType(k);
+    host.appendChild(b);
+  }
+})();
+function wingInfoHtml(){
+  if ((INFO[selKey] || {}).g !== "wing") return "";
+  const a = wingTypeInfo(wingType), extra = !!WINGEXTRA[wingType];
+  const note = wingType === "venation" ? "แผนภาพเส้นปีกพื้นฐานที่ทำให้ง่ายขึ้น แมลงแต่ละอันดับมีเส้นปีกลดลง รวมกัน หรือเพิ่มขึ้นต่างกันไป · คลิกที่เส้นปีกแต่ละเส้นเพื่อดูชื่อ · ใส่บนตัวตั๊กแตนเพื่อเปรียบเทียบเท่านั้น"
+    : wingType === "hamuli" ? "ตะขอทำเป็นสีทองและขยายให้ใหญ่กว่าจริง ซูมเข้าที่ขอบหน้าของปีกคู่หลัง · กด “แยกชิ้นส่วน” เพื่อยกปีกคู่หน้าขึ้นให้เห็นตะขอ · ใส่บนตัวตั๊กแตนเพื่อเปรียบเทียบเท่านั้น"
+    : wingType === "frenulum" ? "frenulum (สีทอง) อยู่ที่โคนปีกคู่หลัง retinaculum (สีส้ม) อยู่ใต้ปีกคู่หน้า ขยายให้ใหญ่กว่าจริง · กด “แยกชิ้นส่วน” เพื่อแยกปีกออกจากกัน · ใส่บนตัวตั๊กแตนเพื่อเปรียบเทียบเท่านั้น"
+    : wingType === "tegmina" ? "นี่คือปีกจริงของตั๊กแตน ปีกคู่หน้าเป็นแบบ tegmina ปีกคู่หลังเป็นแบบ membrane"
+    : wingType === "scale" ? "เปลี่ยนปีกทั้ง 2 คู่เป็นปีกเกล็ด เพื่อเปรียบเทียบรูปร่างเท่านั้น"
+    : wingType === "haltere" ? "ปีกคู่หน้าเป็นเยื่อบาง ปีกคู่หลังเปลี่ยนเป็น haltere ที่ด้านข้างของอกปล้องท้าย · ใส่บนตัวตั๊กแตนเพื่อเปรียบเทียบเท่านั้น"
+    : wingType === "fringed" ? "เปลี่ยนปีกทั้ง 2 คู่เป็นปีกพู่ขน ขยายให้ใหญ่เท่าตัวตั๊กแตน เพลี้ยไฟจริงยาวเพียงราว 1–2 มม."
+    : "เปลี่ยนเฉพาะปีกคู่หน้า ปีกคู่หลังยังเป็นแบบ membrane · ใส่บนตัวตั๊กแตนเพื่อเปรียบเทียบเท่านั้น";
+  return '<div class="antinfo"><span class="chip">'+(extra ? 'เส้นปีกและการเกี่ยวปีก · หัวข้อ '+a.n : 'ลักษณะปีกที่แสดงอยู่ · แบบที่ '+a.n+' จาก '+Object.keys(WINGTYPES).length)+'</span>' +
+    '<h4>'+esc(a.th)+' <span class="en">'+a.en+'</span></h4>' +
+    '<p>'+esc(a.t)+'</p><p><b>พบใน</b> '+esc(a.ex)+'</p>' +
+    '<div class="ref">'+(a.ref ? 'สไลด์ 02 Insect Morphology หน้า '+a.ref : 'เนื้อหาเสริมจาก '+esc(a.src))+'</div>' +
+    '<p class="note">'+note+(extra ? '' : ' · กด “แยกชิ้นส่วน” เพื่อดูปีกตอนกาง')+'</p></div>';
+}
+function setWingType(k){
+  wingType = k; buildWings(k); rebuildIndex(); hoverMesh = null; refreshPartButtons();
+  document.querySelectorAll(".part[data-wing]").forEach(b => b.setAttribute("aria-pressed", b.dataset.wing === k ? "true" : "false"));
+  const pick = {hemelytra:"corium", haltere:"haltere", fringed:"fringe", venation:"forewing", hamuli:"hamuli", frenulum:"frenulum"};
+  select(pick[k] || "forewing");
+  if (k === "venation") focusAt(V(0.45,0.62,2.2).addScaledVector(V(0,0.4,0), explodeT), V(0,7.8,0.7));
+  else if (k === "hamuli") focusAt(V(0.05,0.62,1.5).addScaledVector(V(0,0.1,0), explodeT), V(0.5,4.6,1.6));
+  else if (k === "frenulum") focusAt(V(0.25,0.6,1.0).addScaledVector(V(0,0.1,0), explodeT), V(1.5,4.4,3.8));
+  else focusAt(V(-0.7,0.3,0).addScaledVector(V(0,0.8,0), explodeT), V(3.4,5.6,7.6));
+}
+(function buildWingGrid(){
+  const host = document.getElementById("wingGrid");
+  for (const [k, a] of Object.entries(WINGTYPES)){
+    const b = document.createElement("button"); b.type = "button"; b.className = "part"; b.dataset.wing = k;
+    b.setAttribute("aria-pressed", k === wingType ? "true" : "false");
+    b.innerHTML = '<span class="num">'+a.n+'</span><span>'+esc(a.th)+'<small>'+a.en+'</small></span>';
+    b.onclick = () => setWingType(k);
+    host.appendChild(b);
+  }
+})();
+(function buildLegGrid(){
+  const host = document.getElementById("legGrid");
+  for (const [k, a] of Object.entries(LEGTYPES)){
+    const b = document.createElement("button"); b.type = "button"; b.className = "part"; b.dataset.leg = k;
+    b.setAttribute("aria-pressed", k === legType ? "true" : "false");
+    b.innerHTML = '<span class="num">'+a.n+'</span><span>'+esc(a.th)+'<small>'+a.en.replace(" (raptorial)","")+'</small></span>';
+    b.onclick = () => setLegType(k);
+    host.appendChild(b);
+  }
+})();
+function setAntType(k){
+  antType = k; buildAntennae(k); applyHeadPose(); rebuildIndex(); hoverMesh = null;
+  document.querySelectorAll(".part[data-ant]").forEach(b => b.setAttribute("aria-pressed", b.dataset.ant === k ? "true" : "false"));
+  select("antenna");
+  focusHead();
+}
+(function buildAntGrid(){
+  const host = document.getElementById("antGrid");
+  for (const [k, a] of Object.entries(ANT)){
+    const b = document.createElement("button"); b.type = "button"; b.className = "part"; b.dataset.ant = k;
+    b.setAttribute("aria-pressed", k === antType ? "true" : "false");
+    b.innerHTML = '<span class="num">'+a.n+'</span><span>'+esc(a.th)+'<small>'+a.en+'</small></span>';
+    b.onclick = () => setAntType(k);
+    host.appendChild(b);
+  }
+})();
+const HEAD_KEYS = ["cranium","vertex","frons","clypeus","gena","occiput","epicranial-suture","frontoclypeal-suture"];
+function headInfoHtml(){
+  if (!HEAD_KEYS.includes(selKey)) return "";
+  const a = HEADPOSE[headPose];
+  return '<div class="antinfo"><span class="chip">ทิศทางของหัวที่แสดงอยู่ · แบบที่ '+a.n+' จาก 3</span>' +
+    '<h4>'+esc(a.th)+' <span class="en">'+a.en+'</span></h4>' +
+    '<p>'+esc(a.t)+'</p><p><b>พบใน</b> '+esc(a.ex)+'</p>' +
+    '<div class="ref">สไลด์ 02 Insect Morphology หน้า 28 · '+esc(G2)+'</div>' +
+    '<p class="note">'+(headPose === "hypognathous" ? "นี่คือทิศทางหัวจริงของตั๊กแตน" : "หมุนหัวตั๊กแตนให้ดูทิศทางของปากเท่านั้น รูปร่างหัวจริงของแมลงกลุ่มนี้ต่างออกไป")+'</p></div>';
+}
+function setHeadPose(k){
+  headPose = k; applyHeadPose(); hoverMesh = null;
+  document.querySelectorAll(".part[data-pose]").forEach(b => b.setAttribute("aria-pressed", b.dataset.pose === k ? "true" : "false"));
+  select("cranium");
+  focusAt(H.clone().add(V(-0.3,-0.4,0)).addScaledVector(headEx, explodeT), V(0.9,0.5,7.5));
+}
+function sexInfoHtml(){
+  if (!["ovipositor","subgenital-plate","epiproct","paraproct","cercus"].includes(selKey)) return "";
+  return '<div class="antinfo"><span class="chip">ปลายส่วนท้องที่แสดงอยู่ · '+SEXES[sex].th+' ('+SEXES[sex].en+')</span>' +
+    '<p>'+(sex === "female" ? "ตัวเมียมี valve ของ ovipositor 2 คู่ยื่นออกมาที่ปลายท้อง ส่วนตัวผู้ปลายท้องมนและงอนขึ้นจาก subgenital plate"
+      : "ตัวผู้มี subgenital plate รูปหัวเรือปิดอยู่ใต้ปลายท้อง ส่วนตัวเมียจะเห็น valve ของ ovipositor 2 คู่")+
+    ' ทั้งสองเพศมี epiproct, paraproct และ cerci เหมือนกัน</p>' +
+    '<p class="note">ใช้ลักษณะนี้แยกเพศตั๊กแตนได้ง่ายที่สุด กดสลับเพศได้ที่หัวข้อ “ปลายส่วนท้องตัวเมีย-ตัวผู้”</p></div>';
+}
+function setSex(k){
+  sex = k; buildTerminalia(k); rebuildIndex(); hoverMesh = null; refreshPartButtons();
+  document.querySelectorAll(".part[data-sex]").forEach(b => b.setAttribute("aria-pressed", b.dataset.sex === k ? "true" : "false"));
+  select(SEXES[k].sel);
+  focusAt(V(lastX-0.25, -0.1, 0).addScaledVector(abdBase.clone().add(V(-1.75,0,0)), explodeT), V(0.9,0.6,3.0));
+}
+function typeGrid(hostId, dict, attr, current, onPick){
+  const host = document.getElementById(hostId);
+  for (const [k, a] of Object.entries(dict)){
+    const b = document.createElement("button"); b.type = "button"; b.className = "part"; b.dataset[attr] = k;
+    b.setAttribute("aria-pressed", k === current ? "true" : "false");
+    b.innerHTML = '<span class="num">'+a.n+'</span><span>'+esc(a.th)+'<small>'+a.en+'</small></span>';
+    b.onclick = () => onPick(k);
+    host.appendChild(b);
+  }
+}
+typeGrid("poseGrid", HEADPOSE, "pose", headPose, setHeadPose);
+typeGrid("sexGrid", SEXES, "sex", sex, setSex);
+typeGrid("wingExtraGrid", WINGEXTRA, "wing", wingType, setWingType);
+typeGrid("pretGrid", PRETTYPES, "pret", pretType, setPretType);
+function setSpecies(k){
+  species = k; root.visible = k === "grasshopper"; wroot.visible = k === "weevil";
+  document.getElementById("gTypes").hidden = k !== "grasshopper";
+  document.getElementById("spName").textContent = SPECIES[k].th + " · " + SPECIES[k].en.split(" · ")[1];
+  stage.setAttribute("aria-label", "โมเดลสามมิติของ" + SPECIES[k].th);
+  rebuildIndex(); refreshPartButtons(); hoverMesh = null;
+  document.querySelectorAll(".part[data-species]").forEach(b => b.setAttribute("aria-pressed", b.dataset.species === k ? "true" : "false"));
+  HOME.pos.copy(SPECIES[k].home.pos); HOME.target.copy(SPECIES[k].home.target);
+  select(null);
+  focusAt(HOME.target.clone(), HOME.pos.clone().sub(HOME.target));
+  if (quiz.on) nextQ();
+}
+typeGrid("speciesGrid", Object.fromEntries(Object.entries(SPECIES).map(([k,a]) => [k, {n:a.n, th:a.th, en:a.en.split(" · ")[1]}])), "species", species, setSpecies);
+(function buildList(){
+  const host = document.getElementById("groups"), qg = document.getElementById("qGroup");
+  for (const gk of Object.keys(ORDER)){
+    const g = GROUPS[gk];
+    const sec = document.createElement("section"); sec.className = "group";
+    sec.innerHTML = '<h3><span class="sw" style="background:'+g.color+'"></span>'+g.th+' · '+g.en+'</h3>';
+    const list = document.createElement("div"); list.className = "list";
+    for (const k of ORDER[gk]){
+      const b = document.createElement("button"); b.type = "button"; b.className = "part"; b.dataset.k = k; b.setAttribute("aria-pressed","false");
+      b.innerHTML = esc(INFO[k].th) + '<small>' + esc(INFO[k].en.split(" — ")[0]) + '</small>';
+      b.onclick = () => select(selKey === k ? null : k);
+      list.appendChild(b);
+    }
+    sec.appendChild(list); host.appendChild(sec);
+    const o = document.createElement("option"); o.value = gk; o.textContent = g.th; qg.appendChild(o);
+  }
+  refreshPartButtons();
+})();
+
+/* ================= controls ================= */
+const explodeBtn = document.getElementById("explodeBtn"), slider = document.getElementById("explode");
+function setExplodeTarget(v){ explodeTarget = v; explodeBtn.textContent = v > 0.5 ? "ประกอบกลับ" : "แยกชิ้นส่วน"; if (reduceMotion) explodeT = v; }
+explodeBtn.onclick = () => setExplodeTarget(explodeTarget > 0.5 ? 0 : 1);
+slider.oninput = () => { explodeT = explodeTarget = slider.value/100; explodeBtn.textContent = explodeTarget > 0.5 ? "ประกอบกลับ" : "แยกชิ้นส่วน"; };
+document.getElementById("fade").onchange = e => { fade = e.target.checked; refreshLook(); };
+const rotateBtn = document.getElementById("rotateBtn");
+function setRotate(on){ controls.autoRotate = on; rotateBtn.textContent = on ? "หยุดหมุน" : "หมุนอัตโนมัติ"; rotateBtn.setAttribute("aria-pressed", on ? "true" : "false"); }
+setRotate(controls.autoRotate);
+rotateBtn.onclick = () => setRotate(!controls.autoRotate);
+document.getElementById("resetBtn").onclick = () => {
+  controls.target.copy(HOME.target);
+  camera.position.copy(HOME.pos).sub(HOME.target).multiplyScalar(1 + 0.45*explodeT).add(HOME.target);
+  controls.update();
+};
+
+/* standard views: head points to +x, dorsal is +y, the insect's left side faces +z */
+const VIEWS = {
+  anterior: {dir:V(1,0.04,0),    th:"ด้านหน้า",  en:"Anterior view"},
+  lateral:  {dir:V(0,0.04,1),    th:"ด้านข้าง",  en:"Lateral view"},
+  dorsal:   {dir:V(0,1,0.06),    th:"ด้านบน",   en:"Dorsal view"},
+  ventral:  {dir:V(0,-1,0.06),   th:"ด้านล่าง",  en:"Ventral view"},
+  posterior:{dir:V(-1,0.04,0),   th:"ด้านท้าย",  en:"Posterior view"}
+};
+const vtag = document.getElementById("vtag");
+let vtagTimer = null;
+function setView(k){
+  const v = VIEWS[k], tgt = HOME.target.clone(), dist = HOME.pos.distanceTo(HOME.target);
+  focusAt(tgt, v.dir.clone().normalize().multiplyScalar(dist));
+  vtag.textContent = v.th + " · " + v.en; vtag.hidden = false;
+  clearTimeout(vtagTimer); vtagTimer = setTimeout(() => { vtag.hidden = true; }, 2500);
+}
+document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => setView(b.dataset.view));
+
+/* ================= quiz ================= */
+const quiz = {on:false, target:null, tried:false, solved:false, right:0, asked:0, last:null, mode:"find", endAt:0, over:false};
+const qTh = document.getElementById("qTh"), qEn = document.getElementById("qEn"), qFb = document.getElementById("qFb");
+const qLang = document.getElementById("qLang"), qGroup = document.getElementById("qGroup");
+const qMode = document.getElementById("qMode"), qTime = document.getElementById("qTime"), qPrompt = document.getElementById("qPrompt");
+const qChoices = document.getElementById("qChoices"), qClock = document.getElementById("qClock"), qNextBtn = document.getElementById("qNext");
+function pool(){ return Object.keys(INFO).filter(k => byTag[k] && (qGroup.value === "all" || INFO[k].g === qGroup.value)); }
+function nameOf(k, lang){
+  const inf = infoOf(k), en = inf.en.split(" — ")[0];
+  return lang === "en" ? esc(en) : lang === "th" ? esc(inf.th) : esc(inf.th) + '<small>' + esc(en) + '</small>';
+}
+function shuffle(a){ for (let i=a.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function nextQ(){
+  if (quiz.over) return;
+  const p = pool().filter(k => k !== quiz.last);
+  quiz.target = p[Math.floor(Math.random()*p.length)]; quiz.last = quiz.target; quiz.tried = false; quiz.solved = false;
+  const inf = infoOf(quiz.target), lang = qLang.value;
+  qFb.textContent = ""; qFb.className = "feedback"; qChoices.innerHTML = "";
+  if (quiz.mode === "find"){
+    qPrompt.textContent = "คลิกที่ส่วนนี้บนโมเดล";
+    qTh.textContent = lang === "en" ? inf.en.split(" — ")[0] : inf.th;
+    qEn.textContent = lang === "both" ? inf.en : "";
+    select(null);
+  } else {
+    qPrompt.textContent = "ส่วนที่ไฮไลต์บนโมเดลชื่ออะไร"; qTh.textContent = ""; qEn.textContent = "";
+    /* three distractors, preferably from the same body region, with distinct names */
+    const g = INFO[quiz.target].g, seen = new Set([infoOf(quiz.target).th]), opts = [quiz.target];
+    const all = Object.keys(INFO).filter(k => byTag[k] && k !== quiz.target);
+    for (const k of shuffle(all.filter(k => INFO[k].g === g)).concat(shuffle(all.filter(k => INFO[k].g !== g)))){
+      if (opts.length >= 4) break;
+      const th = infoOf(k).th; if (seen.has(th)) continue; seen.add(th); opts.push(k);
+    }
+    for (const k of shuffle(opts)){
+      const b = document.createElement("button"); b.type = "button"; b.className = "choice"; b.dataset.k = k;
+      b.innerHTML = nameOf(k, lang); b.onclick = () => chooseName(b);
+      qChoices.appendChild(b);
+    }
+    select(quiz.target);
+    if (anchorMesh){
+      const w = new THREE.Vector3(); anchorMesh.getWorldPosition(w);
+      const dir = camera.position.clone().sub(controls.target).normalize();
+      focusAt(w, dir.multiplyScalar(4.6));
+    }
+  }
+}
+function score(){
+  document.getElementById("sRight").textContent = quiz.right;
+  document.getElementById("sAsked").textContent = quiz.asked;
+  document.getElementById("sPct").textContent = quiz.asked ? Math.round(100*quiz.right/quiz.asked) : "–";
+}
+let qTimer = null, qClockTimer = null;
+function markRight(){
+  if (!quiz.tried){ quiz.right++; quiz.asked++; }
+  quiz.tried = true; quiz.solved = true; score();
+  qFb.textContent = "ถูกต้อง"; qFb.className = "feedback ok";
+  clearTimeout(qTimer); qTimer = setTimeout(nextQ, quiz.endAt ? 700 : 1300);
+}
+function markWrong(){ if (!quiz.tried){ quiz.asked++; quiz.tried = true; score(); } }
+function quizAnswer(m){
+  if (!m || !quiz.target || quiz.over || quiz.mode !== "find" || quiz.solved) return;
+  const tags = m.userData.tags;
+  if (tags.includes(quiz.target)){ select(quiz.target, m); markRight(); }
+  else {
+    markWrong();
+    const inf = infoOf(tags[0]);
+    qFb.textContent = "ยังไม่ใช่ ส่วนที่คลิกคือ " + inf.th + " (" + inf.en.split(" — ")[0] + ") ลองอีกครั้ง"; qFb.className = "feedback bad";
+  }
+}
+function chooseName(b){
+  if (quiz.over || quiz.solved) return;
+  if (b.dataset.k === quiz.target || infoOf(b.dataset.k).th === infoOf(quiz.target).th){
+    b.classList.add("ok"); qChoices.querySelectorAll(".choice").forEach(x => x.disabled = true); markRight();
+  } else {
+    markWrong(); b.classList.add("bad"); b.disabled = true;
+    qFb.textContent = "ยังไม่ใช่ ลองอีกครั้ง"; qFb.className = "feedback bad";
+  }
+}
+function revealAnswer(){
+  if (quiz.over || !quiz.target) return;
+  markWrong(); quiz.solved = true;
+  if (quiz.mode === "name"){
+    qChoices.querySelectorAll(".choice").forEach(x => { x.disabled = true; if (x.dataset.k === quiz.target) x.classList.add("ok"); });
+    qFb.textContent = "คำตอบคือ " + infoOf(quiz.target).th; qFb.className = "feedback";
+  } else { select(quiz.target); qFb.textContent = "ส่วนที่ไฮไลต์คือคำตอบ"; qFb.className = "feedback"; }
+}
+function tickClock(){
+  if (!quiz.endAt) return;
+  const left = Math.max(0, Math.ceil((quiz.endAt - performance.now())/1000));
+  qClock.textContent = "เหลือ " + Math.floor(left/60) + ":" + String(left%60).padStart(2, "0");
+  qClock.classList.toggle("low", left <= 10);
+  if (left === 0 && !quiz.over){
+    quiz.over = true; clearTimeout(qTimer); clearInterval(qClockTimer); select(null);
+    qPrompt.textContent = "หมดเวลา"; qChoices.innerHTML = "";
+    qTh.textContent = "ถูก " + quiz.right + " จาก " + quiz.asked + " ข้อ";
+    qEn.textContent = quiz.asked ? "ถูกในครั้งแรกร้อยละ " + Math.round(100*quiz.right/quiz.asked) : "";
+    qFb.textContent = "กด “เริ่มใหม่” เพื่อเล่นอีกรอบ"; qFb.className = "feedback";
+    qNextBtn.textContent = "เริ่มใหม่";
+  }
+}
+function startRound(){
+  clearTimeout(qTimer); clearInterval(qClockTimer);
+  quiz.mode = qMode.value; quiz.over = false; quiz.right = 0; quiz.asked = 0; score();
+  const secs = +qTime.value; quiz.endAt = secs ? performance.now() + secs*1000 : 0;
+  qClock.hidden = !secs; qNextBtn.textContent = "ข้อถัดไป";
+  if (secs){ tickClock(); qClockTimer = setInterval(tickClock, 250); }
+  nextQ();
+}
+document.getElementById("qHint").onclick = revealAnswer;
+qNextBtn.onclick = () => { clearTimeout(qTimer); if (quiz.over) startRound(); else nextQ(); };
+qLang.onchange = qGroup.onchange = () => { clearTimeout(qTimer); quiz.over ? startRound() : nextQ(); };
+qMode.onchange = qTime.onchange = startRound;
+
+/* ================= identification key to orders (adult, winged) ================= */
+const KEY = {
+  c1:{h:"ดูปีกคู่หลัง", a:[
+    {t:"ปีกที่ใช้บินมีคู่เดียว ปีกคู่หลังลดรูปเป็นตุ่มทรงตัว (haltere)", go:"Diptera", show:{wing:"haltere"}},
+    {t:"มีปีก 2 คู่", go:"c2"}]},
+  c2:{h:"ดูปาก", a:[
+    {t:"ปากเป็นงวงเจาะดูด (rostrum) ยื่นออกจากด้านล่างของหัว ชี้ไปด้านหลังระหว่างขา", go:"Hemiptera", show:{mouth:"piercing"}},
+    {t:"ปากไม่ได้เป็นงวงเจาะดูดแบบนี้", go:"c3"}]},
+  c3:{h:"ดูผิวปีกและปาก", a:[
+    {t:"ปีกทั้ง 2 คู่มีเกล็ดปกคลุม ปากเป็นงวงม้วนเป็นวงใต้หัว", go:"Lepidoptera", show:{wing:"scale", mouth:"siphoning"}},
+    {t:"ปีกไม่มีเกล็ดปกคลุม", go:"c4"}]},
+  c4:{h:"ดูรูปร่างปีก", a:[
+    {t:"ปีกแคบเรียวคล้ายแถบ ขอบปีกมีขนยาวเป็นพู่ ตัวเล็กมาก ยาวราว 1–2 มม.", go:"Thysanoptera", show:{wing:"fringed", mouth:"rasping"}},
+    {t:"ปีกไม่ได้เป็นแบบนี้", go:"c5"}]},
+  c5:{h:"ดูปีกคู่หน้า", a:[
+    {t:"ปีกคู่หน้าแข็งทั้งแผ่น ไม่มีเส้นปีก (elytra) เมื่อหุบ ขอบปีกทั้งสองข้างชนกันเป็นเส้นตรงกลางหลัง", go:"c6", show:{wing:"elytra"}},
+    {t:"ปีกคู่หน้าไม่ได้แข็งทั้งแผ่น", go:"c7"}]},
+  c6:{h:"ดูปลายส่วนท้อง", a:[
+    {t:"ปลายท้องมี cerci เป็นคีมแข็ง 1 คู่ ปีก elytra สั้นมาก ส่วนท้องโผล่ออกมาหลายปล้อง", go:"Dermaptera"},
+    {t:"ปลายท้องไม่มีคีม ปีก elytra มักคลุมส่วนท้องเกือบทั้งหมด", go:"Coleoptera", show:{species:"weevil"}}]},
+  c7:{h:"ดูเนื้อปีกคู่หน้า", a:[
+    {t:"ปีกคู่หน้าหนาเหนียวคล้ายหนัง แต่ยังเห็นเส้นปีก (tegmina)", go:"c8", show:{wing:"tegmina"}},
+    {t:"ปีกทั้ง 2 คู่เป็นเยื่อบางใส", go:"c10", show:{wing:"membrane"}}]},
+  c8:{h:"ดูขาคู่หลัง", a:[
+    {t:"ขาคู่หลังเป็นขากระโดด femur ใหญ่ ภายในมีกล้ามเนื้อมาก", go:"Orthoptera", show:{leg:"jumping"}},
+    {t:"ขาคู่หลังไม่ได้เป็นขากระโดด", go:"c9", show:{leg:"walking"}}]},
+  c9:{h:"ดูขาคู่หน้าและอกปล้องแรก", a:[
+    {t:"ขาคู่หน้าเป็นขาหนีบ มีหนามเรียงที่ femur และ tibia อกปล้องแรกยาว", go:"Mantodea", show:{leg:"grasping"}},
+    {t:"ขาทุกคู่เป็นขาเดิน ลำตัวแบน pronotum แผ่ออกคลุมหัวเกือบมิด", go:"Blattodea", show:{leg:"walking"}}]},
+  c10:{h:"ดูหนวดและส่วนท้อง", a:[
+    {t:"หนวดสั้นมากแบบเส้นขน ตาประกอบใหญ่มาก ส่วนท้องยาวเรียว พับปีกเก็บบนหลังแบบแมลงอื่นไม่ได้", go:"Odonata", show:{ant:"setaceous"}},
+    {t:"ไม่ได้เป็นแบบนี้", go:"c11"}]},
+  c11:{h:"ดูปีกคู่หลังและเอว", a:[
+    {t:"ปีกคู่หลังเล็กกว่าปีกคู่หน้า เกี่ยวกันด้วยตะขอ (hamuli) ส่วนใหญ่ส่วนท้องปล้องแรกคอดเป็นเอว", go:"Hymenoptera", show:{wing:"hamuli"}},
+    {t:"ปีก 2 คู่ใกล้เคียงกัน ไม่มี hamuli", go:"c12"}]},
+  c12:{h:"ดูหนวดและเส้นปีก", a:[
+    {t:"หนวดแบบลูกปัด ปีก 2 คู่ขนาดและรูปร่างเท่ากัน หลุดง่ายตามรอยที่โคนปีก", go:"Termites", show:{ant:"moniliform"}},
+    {t:"หนวดยาวแบบเส้นด้าย ปีกมีเส้นปีกจำนวนมากเป็นร่างแห เส้นปีกแตกแขนงที่ขอบปีก", go:"Neuroptera", show:{ant:"filiform", wing:"membrane"}}]}
+};
+const ORD = {
+  Diptera:{th:"อันดับแมลงวัน", lat:"Diptera", ex:"แมลงวัน ยุง ริ้น เหลือบ แมลงวันผลไม้", feat:["ปีกที่ใช้บิน 1 คู่ ปีกคู่หลังเป็น haltere","ปากแบบซับดูด เจาะดูด หรือกัด-ซับดูด","หนวดหลายแบบ แมลงวันมักมีหนวดแบบมีขนอะริสตา (aristate)"],
+    agri:"แมลงวันผลไม้และแมลงวันหนอนชอนใบเป็นศัตรูสำคัญของผักและผลไม้ ส่วนแมลงวันก้นขน (Tachinidae) เป็นตัวเบียน และแมลงวันดอกไม้ช่วยผสมเกสร"},
+  Hemiptera:{th:"อันดับมวนและเพลี้ย", lat:"Hemiptera", ex:"มวน เพลี้ยกระโดด เพลี้ยอ่อน เพลี้ยแป้ง แมลงหวี่ขาว จักจั่น", feat:["ปากแบบเจาะดูด เป็นงวง (rostrum) ออกจากด้านล่างของหัว","มวนมีปีกคู่หน้าแบบ hemelytra ส่วนเพลี้ยและจักจั่นมีปีกเนื้อเดียวกันทั้งแผ่น"],
+    agri:"กลุ่มศัตรูพืชที่สำคัญมาก ดูดน้ำเลี้ยงพืชและถ่ายทอดเชื้อไวรัส เช่น เพลี้ยกระโดดสีน้ำตาลในนาข้าว เพลี้ยแป้งมันสำปะหลัง แมลงหวี่ขาว แต่มวนพิฆาตและมวนเพชฌฆาตเป็นตัวห้ำ"},
+  Lepidoptera:{th:"อันดับผีเสื้อ", lat:"Lepidoptera", ex:"ผีเสื้อกลางวัน ผีเสื้อกลางคืน", feat:["ปีก 2 คู่มีเกล็ดปกคลุม","ปากแบบดูดกิน (งวงม้วน)","ตัวอ่อนเป็นหนอนที่มีปากกัดกินและมีขาเทียม (proleg)"],
+    agri:"ตัวอ่อน (หนอน) เป็นศัตรูพืชสำคัญ เช่น หนอนกระทู้ข้าวโพดลายจุด หนอนใยผัก หนอนเจาะลำต้นข้าว ส่วนตัวเต็มวัยช่วยผสมเกสร และหนอนไหมใช้ผลิตเส้นไหม"},
+  Thysanoptera:{th:"อันดับเพลี้ยไฟ", lat:"Thysanoptera", ex:"เพลี้ยไฟพริก เพลี้ยไฟฝ้าย", feat:["ตัวเล็กมาก ยาวราว 1–2 มม.","ปีกแคบเรียวมีขนพู่ที่ขอบ","ปากแบบเขี่ยดูด มี mandible ข้างเดียว"],
+    agri:"ดูดกินน้ำเลี้ยงที่ยอดอ่อน ดอก และผล ทำให้ใบหงิกและผลมีรอยแผล บางชนิดถ่ายทอดไวรัสกลุ่ม tospovirus"},
+  Coleoptera:{th:"อันดับด้วง", lat:"Coleoptera", ex:"ด้วงงวง ด้วงเต่า ด้วงแรด ด้วงหมัดผัก แมลงทับ", feat:["ปีกคู่หน้าเป็น elytra คลุมปีกคู่หลังที่เป็นเยื่อบาง","ปากแบบกัดกิน","เป็นอันดับที่มีจำนวนชนิดมากที่สุด"],
+    agri:"มีทั้งศัตรูพืช เช่น ด้วงงวงมันเทศ ด้วงแรดมะพร้าว มอดในโรงเก็บ และแมลงที่มีประโยชน์ เช่น ด้วงเต่าตัวห้ำที่กินเพลี้ยอ่อน", model:"ดูตัวอย่างด้วงงวงในแท็บสำรวจได้"},
+  Dermaptera:{th:"อันดับแมลงหางหนีบ", lat:"Dermaptera", ex:"แมลงหางหนีบ", feat:["ปลายท้องมี cerci เป็นคีม 1 คู่","ปีกคู่หน้าเป็น elytra สั้นมาก","ปากแบบกัดกิน"],
+    agri:"บางชนิดเป็นตัวห้ำที่สำคัญในแปลงข้าวโพด กินไข่และหนอนของผีเสื้อ"},
+  Orthoptera:{th:"อันดับตั๊กแตนและจิ้งหรีด", lat:"Orthoptera", ex:"ตั๊กแตน จิ้งหรีด แมลงกระชอน", feat:["ปีกคู่หน้าเป็น tegmina","ขาคู่หลังเป็นขากระโดด","ปากแบบกัดกิน"],
+    agri:"ตั๊กแตนบางชนิดระบาดกัดกินพืชไร่ เช่น ตั๊กแตนปาทังก้า แมลงกระชอนกัดรากพืช ส่วนจิ้งหรีดเลี้ยงเป็นอาหาร", model:"ตั๊กแตนในแท็บสำรวจอยู่ในอันดับนี้"},
+  Mantodea:{th:"อันดับตั๊กแตนตำข้าว", lat:"Mantodea", ex:"ตั๊กแตนตำข้าว", feat:["ขาคู่หน้าเป็นขาหนีบ","อกปล้องแรกยาว หัวหมุนได้คล่อง","ปีกคู่หน้าเป็น tegmina"],
+    agri:"เป็นตัวห้ำ กินแมลงชนิดอื่นในแปลงปลูก"},
+  Blattodea:{th:"อันดับแมลงสาบ", lat:"Blattodea", ex:"แมลงสาบ", feat:["ลำตัวแบน pronotum คลุมหัว","ปีกคู่หน้าเป็น tegmina","ขาเดินวิ่งเร็ว"],
+    agri:"เป็นแมลงที่สำคัญด้านสุขอนามัยในบ้านเรือนและโรงเก็บอาหาร ปัจจุบันปลวกถูกจัดอยู่ในอันดับนี้ด้วย"},
+  Odonata:{th:"อันดับแมลงปอ", lat:"Odonata", ex:"แมลงปอ แมลงปอเข็ม", feat:["หนวดสั้นแบบเส้นขน ตาประกอบใหญ่มาก","ปีก 2 คู่เป็นเยื่อบาง มีเส้นปีกมาก","ตัวอ่อนอยู่ในน้ำ มีปากแบบหน้ากาก"],
+    agri:"เป็นตัวห้ำทั้งตัวอ่อนในน้ำและตัวเต็มวัย พบมากในนาข้าว ช่วยกินแมลงศัตรูข้าวและลูกน้ำยุง"},
+  Hymenoptera:{th:"อันดับผึ้ง ต่อ แตน มด", lat:"Hymenoptera", ex:"ผึ้ง ต่อ แตน แตนเบียน มด", feat:["ปีก 2 คู่เป็นเยื่อบาง ปีกคู่หลังเล็กกว่า เกี่ยวกันด้วย hamuli","ส่วนใหญ่ท้องคอดเป็นเอว","ปากแบบกัดกิน หรือกัด-เลีย (ผึ้ง)"],
+    agri:"ผึ้งเป็นแมลงผสมเกสรที่สำคัญที่สุด แตนเบียน เช่น แตนเบียนไข่ไตรโคแกรมมา ใช้ควบคุมศัตรูพืชโดยชีววิธี แต่มดบางชนิดช่วยดูแลเพลี้ยที่เป็นศัตรูพืช"},
+  Termites:{th:"ปลวก", lat:"Blattodea (เดิมคือ Isoptera)", ex:"ปลวก แมลงเม่า (ปลวกวรรณะสืบพันธุ์)", feat:["หนวดแบบลูกปัด","ปีก 2 คู่ขนาดเท่ากัน หลุดง่ายหลังบินออกจากรัง","ท้องไม่คอดเป็นเอว ต่างจากมด"],
+    agri:"ทำลายไม้และพืชบางชนิด เช่น อ้อย มันสำปะหลัง แต่ก็ช่วยย่อยสลายเศษซากพืชในดิน"},
+  Neuroptera:{th:"อันดับแมลงช้าง", lat:"Neuroptera", ex:"แมลงช้างปีกใส (green lacewing) และ antlion", feat:["ปีก 2 คู่เป็นเยื่อบาง มีเส้นปีกมากเป็นร่างแห","หนวดยาวแบบเส้นด้าย","ปากแบบกัดกิน"],
+    agri:"ตัวอ่อนของแมลงช้างปีกใสเป็นตัวห้ำที่กินเพลี้ยอ่อน เพลี้ยแป้ง และไข่ผีเสื้อ ใช้ควบคุมศัตรูพืชโดยชีววิธี"}
+};
+const keyState = {path:[]};   /* [{c, i}] answers taken so far */
+const keyCard = document.getElementById("keyCard"), keyPath = document.getElementById("keyPath");
+function keyDemo(sh){
+  if (sh.species){ if (species !== sh.species) setSpecies(sh.species); return; }
+  if (species !== "grasshopper") setSpecies("grasshopper");
+  if (sh.leg) setLegType(sh.leg);
+  if (sh.ant) setAntType(sh.ant);
+  if (sh.mouth) setMouthType(sh.mouth);
+  if (sh.wing) setWingType(sh.wing);
+}
+function keyRender(){
+  const n = Object.keys(KEY);
+  keyPath.innerHTML = keyState.path.map((p, i) => '<li><button type="button" data-i="'+i+'">ข้อ '+(n.indexOf(p.c)+1)+' · '+esc(KEY[p.c].a[p.i].t)+'</button></li>').join("");
+  keyPath.querySelectorAll("button").forEach(b => b.onclick = () => { keyState.path.length = +b.dataset.i; keyRender(); });
+  const last = keyState.path[keyState.path.length-1], at = last ? KEY[last.c].a[last.i].go : "c1";
+  document.getElementById("keyBack").disabled = !keyState.path.length;
+  if (KEY[at]){
+    const c = KEY[at];
+    keyCard.innerHTML = '<div class="keyq">ข้อ '+(n.indexOf(at)+1)+' · <b>'+esc(c.h)+'</b></div>' +
+      c.a.map((o, i) => '<div class="keyopt"><button class="go" type="button" data-i="'+i+'">'+esc(o.t)+'</button>' +
+        (o.show ? '<button class="show" type="button" data-s="'+i+'">ดูบนโมเดล</button>' : '') + '</div>').join("");
+    keyCard.querySelectorAll(".go").forEach(b => b.onclick = () => { keyState.path.push({c:at, i:+b.dataset.i}); keyRender(); });
+    keyCard.querySelectorAll(".show").forEach(b => b.onclick = () => keyDemo(c.a[+b.dataset.s].show));
+  } else {
+    const o = ORD[at];
+    keyCard.innerHTML = '<div class="keyres"><div class="keyq">ผลการจำแนก</div><h3>'+esc(o.th)+'</h3><div class="lat">'+esc(o.lat)+'</div>' +
+      '<p><b>ตัวอย่าง</b> '+esc(o.ex)+'</p><ul>'+o.feat.map(f => '<li>'+esc(f)+'</li>').join("")+'</ul>' +
+      '<p><b>ความสำคัญทางการเกษตร</b> '+esc(o.agri)+'</p>' + (o.model ? '<p class="note">'+esc(o.model)+'</p>' : '') + '</div>';
+  }
+}
+document.getElementById("keyBack").onclick = () => { keyState.path.pop(); keyRender(); };
+document.getElementById("keyRestart").onclick = () => { keyState.path = []; keyRender(); };
+document.getElementById("keyReset").onclick = () => {
+  if (species !== "grasshopper") setSpecies("grasshopper");
+  setLegType("jumping"); setAntType("filiform"); setMouthType("chewing"); setWingType("tegmina");
+  select(null); focusAt(HOME.target.clone(), HOME.pos.clone().sub(HOME.target));
+};
+keyRender();
+const tabE = document.getElementById("tabExplore"), tabQ = document.getElementById("tabQuiz"), tabK = document.getElementById("tabKey");
+function setTab(t){
+  const q = t === "quiz", wasQuiz = quiz.on;
+  quiz.on = q;
+  tabE.setAttribute("aria-selected", t === "explore"); tabQ.setAttribute("aria-selected", q); tabK.setAttribute("aria-selected", t === "key");
+  document.getElementById("explore").hidden = t !== "explore"; document.getElementById("quiz").hidden = !q; document.getElementById("keyPane").hidden = t !== "key";
+  tip.hidden = true;
+  if (q) startRound();
+  else { clearTimeout(qTimer); clearInterval(qClockTimer); quiz.endAt = 0; if (wasQuiz) select(null); }
+}
+tabE.onclick = () => setTab("explore"); tabQ.onclick = () => setTab("quiz"); tabK.onclick = () => setTab("key");
+
+/* ================= level switching ================= */
+const TYPEDICTS = [["ant", ANT], ["mouth", MOUTHTYPES], ["wing", WINGTYPES], ["leg", LEGTYPES]];
+const okType = (dict, k) => LEVEL >= 3 || (LEVEL === 2 && dict[k] && dict[k].ref);
+function applyLevel(n){
+  LEVEL = n;
+  if (n < 3 && tabK.getAttribute("aria-selected") === "true") setTab("explore");
+  if (n === 1 && species !== "grasshopper") setSpecies("grasshopper");
+  /* put back any type that this level does not teach */
+  if (!okType(ANT, antType)) setAntType("filiform");
+  if (!okType(MOUTHTYPES, mouthType)) setMouthType("chewing");
+  if (!okType(WINGTYPES, wingType)) setWingType("tegmina");
+  if (!okType(LEGTYPES, legType)) setLegType("jumping");
+  if (n < 3 && pretType !== "arolium") setPretType("arolium");
+  if (n < 2 && headPose !== "hypognathous") setHeadPose("hypognathous");
+  for (const m of pickables){ m.userData.tags = lvTags(m.userData.allTags); m.visible = m.userData.tags.length > 0; }
+  rebuildIndex(); hoverMesh = null;
+  document.querySelectorAll(".part[data-k]").forEach(b => { b.hidden = lvOf(b.dataset.k) > n; });
+  refreshPartButtons();
+  document.querySelectorAll("section.group[data-lv]").forEach(s => { s.hidden = +s.dataset.lv > n; });
+  for (const [attr, dict] of TYPEDICTS)
+    document.querySelectorAll("#gTypes .part[data-"+attr+"]").forEach(b => { if (dict[b.dataset[attr]]) b.hidden = !okType(dict, b.dataset[attr]); });
+  document.querySelectorAll("h3[data-h2]").forEach(h => { if (!h.dataset.h3) h.dataset.h3 = h.textContent; h.textContent = n >= 3 ? h.dataset.h3 : h.dataset.h2; });
+  tabK.hidden = n < 3;
+  /* level 1 quiz: find-on-model only, no timer */
+  qMode.closest(".field").hidden = qTime.closest(".field").hidden = n < 2;
+  if (n < 2){ qMode.value = "find"; qTime.value = "0"; }
+  document.querySelectorAll(".lvbtn").forEach(b => b.setAttribute("aria-pressed", +b.dataset.level === n ? "true" : "false"));
+  document.querySelectorAll(".landcard").forEach(b => b.setAttribute("aria-current", +b.dataset.level === n ? "true" : "false"));
+  try { const u = new URL(location.href); u.searchParams.set("level", n); history.replaceState(null, "", u); } catch (e) {}
+  try { localStorage.setItem("morph3d-level", n); } catch (e) {}
+  select(null);
+  if (quiz.on) startRound();
+}
+const landing = document.getElementById("landing");
+function showLanding(on){
+  landing.hidden = !on;
+  if (on){ const c = landing.querySelector('.landcard[aria-current="true"]') || landing.querySelector(".landcard"); c.focus({preventScroll:true}); }
+}
+/* part counts on the landing cards (grasshopper parts, cumulative) */
+for (let n = 1; n <= 3; n++){
+  const c = new Set();
+  for (const ks of Object.values(ORDER)) for (const k of ks) if (lvOf(k) <= n && !(INFO[k] && /weevil|scrobe/.test(k))) c.add(k);
+  document.getElementById("lc"+n).textContent = (n === 1 ? "" : "รวมระดับก่อนหน้า ") + c.size + " ชื่อชิ้นส่วน";
+}
+document.querySelectorAll(".lvbtn, .landcard").forEach(b => b.onclick = () => { applyLevel(+b.dataset.level); showLanding(false); });
+document.getElementById("openLanding").onclick = () => showLanding(true);
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !landing.hidden) showLanding(false); });
+{
+  let q = null; try { q = new URLSearchParams(location.search).get("level"); } catch (e) {}
+  let saved = null; try { saved = localStorage.getItem("morph3d-level"); } catch (e) {}
+  const n = [1,2,3].includes(+q) ? +q : [1,2,3].includes(+saved) ? +saved : 1;
+  applyLevel(n);
+  showLanding(![1,2,3].includes(+q));
+}
+
+/* ================= render loop ================= */
+function resize(){
+  const w = stage.clientWidth, h = stage.clientHeight; if (!w || !h) return;
+  renderer.setSize(w, h, false);
+  camera.aspect = w/h;
+  camera.fov = camera.aspect >= 1.25 ? 35 : Math.min(70, 35*1.25/camera.aspect);
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage); resize();
+
+const tmp = new THREE.Vector3(), box = new THREE.Box3();
+const tagTh = document.getElementById("tagTh"), tagEn = document.getElementById("tagEn");
+let last = performance.now(), lastT = 0;
+function frame(now){
+  const dt = Math.min(0.05, (now-last)/1000); last = now;
+  if (Math.abs(explodeTarget - explodeT) > 0.0005){
+    explodeT += (explodeTarget - explodeT) * Math.min(1, dt*3.5);
+    if (Math.abs(explodeTarget - explodeT) < 0.001) explodeT = explodeTarget;
+    slider.value = Math.round(explodeT*100);
+  }
+  if (explodeT !== lastT){ // pull the camera back as parts spread out, keeping any zoom the viewer chose
+    const k = (1 + 0.45*explodeT) / (1 + 0.45*lastT);
+    camera.position.sub(controls.target).multiplyScalar(k).add(controls.target);
+    lastT = explodeT;
+  }
+  if (camTween){
+    camTween.t = Math.min(1, camTween.t + dt/0.8);
+    const e = 1 - Math.pow(1 - camTween.t, 3);
+    /* orbit around the target (rotate the view direction, lerp the distance) so the camera never passes through the model */
+    const ct = camTween;
+    if (!ct.q){
+      const fo = ct.fp.clone().sub(ct.ft), to = ct.tp.clone().sub(ct.tt);
+      ct.fl = fo.length(); ct.tl = to.length(); ct.fd = fo.normalize();
+      ct.q = new THREE.Quaternion().setFromUnitVectors(ct.fd, to.normalize());
+    }
+    controls.target.lerpVectors(ct.ft, ct.tt, e);
+    const qe = new THREE.Quaternion().slerp(ct.q, e);
+    camera.position.copy(ct.fd).applyQuaternion(qe).multiplyScalar(ct.fl + (ct.tl - ct.fl)*e).add(controls.target);
+    if (camTween.t >= 1) camTween = null;
+  }
+  applyExplode(explodeT);
+  controls.update();
+  renderer.render(scene, camera);
+  if (anchorMesh && selKey){
+    box.setFromObject(anchorMesh);
+    if (selKey.startsWith("leg-")){ // a whole leg: label above the nearer leg of the pair
+      const zs = Math.sign(box.getCenter(tmp).z);
+      for (const mm of byTag[selKey] || []){ mm.getWorldPosition(tmp); if (Math.sign(tmp.z) === zs) box.expandByObject(mm); }
+    }
+    box.getCenter(tmp); tmp.y = box.max.y;
+    tmp.project(camera);
+    if (tmp.z < 1){
+      const inf = infoOf(selKey), masked = quiz.on && quiz.mode === "name" && !quiz.solved;
+      tagTh.textContent = masked ? "?" : inf.th; tagEn.textContent = masked ? "ชิ้นนี้ชื่ออะไร" : inf.en.split(" — ")[0];
+      tag3d.style.transform = "translate(" + ((tmp.x*0.5+0.5)*stage.clientWidth) + "px," + ((-tmp.y*0.5+0.5)*stage.clientHeight) + "px) translate(-50%,-100%)";
+      tag3d.hidden = false;
+    } else tag3d.hidden = true;
+  } else tag3d.hidden = true;
+  requestAnimationFrame(frame);
+}
+refreshLook(); renderInfo();
+requestAnimationFrame(frame);
+})();
+</script>

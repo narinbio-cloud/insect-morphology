@@ -1,0 +1,6 @@
+# Block repo internals and project notes from the public website
+RedirectMatch 404 /\.git(/|$)
+<FilesMatch "(\.(md|sh)|^\.git.*|^\.htaccess)$">
+  Require all denied
+</FilesMatch>
+Options -Indexes
