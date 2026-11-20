@@ -145,6 +145,19 @@ button,input,select{font:inherit;color:inherit}
 .field{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
 .field select{border:1px solid var(--line);border-radius:8px;padding:5px 8px;background:var(--surface)}
 
+.qprog{display:flex;align-items:center;gap:10px;margin:6px 0 2px;font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.qprog .bar{flex:1;height:5px;border-radius:3px;background:var(--line);overflow:hidden}
+.qprog .bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
+.qwho{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:13px;color:var(--muted);margin-bottom:8px}
+.qwho .linkbtn{margin:0}
+.idfield{color:var(--ink);font-size:14px;margin-top:10px}
+.idfield input{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--surface);font-family:var(--f-mono);font-size:18px;letter-spacing:.08em;max-width:240px}
+.idfield input:focus{outline:2px solid var(--accent);outline-offset:1px}
+.idhelp{margin:6px 0 0;font-size:13px;color:var(--muted)}
+.qresult{margin-top:12px;padding-top:10px;border-top:1px dashed var(--line);font-size:14px}
+.qresult .note{font-size:13px;color:var(--muted);margin:6px 0 0}
+.warn{color:var(--bad)} .okc{color:var(--ok);font-weight:600}
+#qGate[hidden],#qBody[hidden],.qresult[hidden]{display:none!important}
 .part[hidden],.group[hidden],.field[hidden],.tab[hidden]{display:none!important}
 /* ---------- levels ---------- */
 .levelbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
@@ -266,28 +279,42 @@ button,input,select{font:inherit;color:inherit}
     </div>
 
     <div id="quiz" hidden>
+      <div class="quizcard" id="qGate" hidden>
+        <div class="q">ก่อนเริ่มทำแบบทดสอบ</div>
+        <label class="field idfield">รหัสนักศึกษา
+          <input id="qIdIn" type="text" inputmode="numeric" autocomplete="off" maxlength="14" placeholder="เช่น 6530401234">
+        </label>
+        <p class="idhelp">กรอกรหัสนักศึกษา<b>ให้ครบ 10 หลัก</b> เป็นตัวเลขเท่านั้น</p>
+        <div class="feedback" id="qIdFb" aria-live="polite"></div>
+        <button class="btn primary" id="qIdGo" type="button">เริ่มทำแบบทดสอบ</button>
+        <p class="hint">ระบบจะบันทึกรหัสนักศึกษา ระดับ คะแนน ข้อที่ตอบผิด และวันเวลาที่ทำ ลงในไฟล์ของอาจารย์ผู้สอน เพื่อใช้ติดตามความก้าวหน้าในรายวิชานี้เท่านั้น</p>
+      </div>
+      <div id="qBody">
+      <div class="qwho"><span id="qWho"></span><button class="linkbtn" id="qChangeId" type="button">เปลี่ยนรหัส</button></div>
       <div class="quizcard">
         <div class="qhead"><div class="q" id="qPrompt">คลิกที่ส่วนนี้บนโมเดล</div><div class="qclock" id="qClock" hidden></div></div>
+        <div class="qprog"><span id="qProg"></span><div class="bar"><i id="qBar"></i></div></div>
         <div class="target" id="qTh"></div>
         <div class="target-en" id="qEn"></div>
         <div class="choices" id="qChoices"></div>
         <div class="feedback" id="qFb" aria-live="polite"></div>
         <div class="row" style="margin-top:8px">
           <button class="btn" id="qHint" type="button">เฉลย</button>
-          <button class="btn" id="qNext" type="button">ข้อถัดไป</button>
+          <button class="btn" id="qNext" type="button">ข้าม / ข้อถัดไป</button>
         </div>
         <div class="score">
           <div><b id="sRight">0</b><span>ถูกในครั้งแรก</span></div>
           <div><b id="sAsked">0</b><span>ข้อที่ทำแล้ว</span></div>
           <div><b id="sPct">–</b><span>ร้อยละ</span></div>
         </div>
+        <div class="qresult" id="qResult" hidden></div>
       </div>
       <div class="row" style="margin-top:16px">
         <label class="field">รูปแบบ
           <select id="qMode"><option value="find">หาชิ้นส่วนบนโมเดล</option><option value="name">บอกชื่อชิ้นที่ไฮไลต์</option></select>
         </label>
         <label class="field">จับเวลา
-          <select id="qTime"><option value="0">ไม่จับเวลา</option><option value="60">60 วินาที</option><option value="120">2 นาที</option></select>
+          <select id="qTime"><option value="0">ไม่จับเวลา</option><option value="300">5 นาที</option><option value="600">10 นาที</option></select>
         </label>
         <label class="field">ภาษา
           <select id="qLang"><option value="both">ไทย + อังกฤษ</option><option value="th">ไทยอย่างเดียว</option><option value="en">อังกฤษอย่างเดียว</option></select>
@@ -296,7 +323,8 @@ button,input,select{font:inherit;color:inherit}
           <select id="qGroup"><option value="all">ทุกส่วน</option></select>
         </label>
       </div>
-      <p class="hint" id="quizHint">ชิ้นส่วนบางชิ้นอยู่ด้านในหรือถูกบัง เช่น ลิ้น (hypopharynx) และปีกคู่หลัง ให้กด “แยกชิ้นส่วน” ก่อนตอบ</p>
+      <p class="hint" id="quizHint">แต่ละรอบถามทุกชิ้นส่วนของระดับนี้ข้อละครั้ง ระบบจะเปลี่ยนโมเดลให้เองเมื่อชิ้นส่วนนั้นอยู่บนแมลงชนิดอื่นหรือต้องแยกชิ้นส่วนก่อน หมุนและซูมโมเดลได้ระหว่างตอบ</p>
+    </div>
     </div>
 
     <div id="keyPane" hidden>
@@ -437,7 +465,7 @@ const INFO = {
     t:"เกิดจาก galea ของ maxillae ทั้งสองข้างยืดยาวและประกบกันเป็นท่อกลวง ม้วนเก็บใต้หัวเมื่อไม่ใช้ เมื่อกด “แยกชิ้นส่วน” จะเห็นว่างวงประกอบด้วย 2 ซีก"},
   "labellum":{g:"mouth",th:"แผ่นซับ",en:"Labellum",ref:"33, 35",
     t:"ปลายของ labium ที่แผ่เป็นแผ่นนุ่ม 2 แผ่น ด้านล่างมีร่องเล็กๆ (pseudotracheae) จำนวนมาก ใช้ซับอาหารเหลวเข้าปาก"},
-  "glossa":{g:"mouth",th:"ลิ้น (glossa)",en:"Glossa",ref:"34",
+  "glossa":{g:"mouth",th:"ปลายลิ้น (glossa)",en:"Glossa",ref:"34",
     t:"แผ่นคู่ด้านใน (mesal) ที่ปลาย labium ในตั๊กแตนมีขนาดเล็ก ส่วนในผึ้ง glossae ยืดยาวเชื่อมกันเป็นลิ้นมีขน ปลายเป็นแผ่นเล็กเรียกว่า flabellum ใช้เลียน้ำหวาน"},
   "paraglossa":{g:"mouth",th:"แผ่นข้างลิ้น",en:"Paraglossa",ref:null,src:G2,
     t:"แผ่นคู่ด้านนอกที่ปลาย labium อยู่ข้าง glossa เมื่อรวม glossae กับ paraglossae เรียกว่า ligula"},
@@ -469,7 +497,7 @@ const INFO = {
     t:"แผ่นแข็งที่ปิดด้านบน (dorsal) ของปล้องอกแต่ละปล้อง เมื่อแยกชิ้นส่วน แผ่นนี้จะลอยขึ้นด้านบน"},
   "pleuron":{g:"thorax",th:"แผ่นข้าง",en:"Pleuron",ref:"37",
     t:"แผ่นแข็งที่ปิดด้านข้าง (lateral) ทั้ง 2 ด้านของปล้องอก ขาต่อกับลำตัวระหว่าง pleuron กับ sternum"},
-  "sternum":{g:"thorax",th:"แผ่นอก",en:"Sternum",ref:"37",
+  "sternum":{g:"thorax",th:"แผ่นอกด้านล่าง",en:"Sternum",ref:"37",
     t:"แผ่นแข็งที่ปิดด้านล่าง (ventral) ของปล้องอก เมื่อแยกชิ้นส่วน แผ่นนี้จะเลื่อนลงด้านล่าง"},
   "forewing":{g:"wing",th:"ปีกคู่หน้า",en:"Forewing — tegmina",ref:"38, 40",
     t:"ปีกคู่หน้าของตั๊กแตนเป็นแบบ tegmina คือเนื้อปีกเหนียวและหนา ช่วยปกป้องปีกคู่หลังที่พับอยู่ข้างใต้ ติดกับ mesothorax"},
@@ -2134,7 +2162,6 @@ function setSpecies(k){
   HOME.pos.copy(SPECIES[k].home.pos); HOME.target.copy(SPECIES[k].home.target);
   select(null);
   focusAt(HOME.target.clone(), HOME.pos.clone().sub(HOME.target));
-  if (quiz.on) nextQ();
 }
 typeGrid("speciesGrid", Object.fromEntries(Object.entries(SPECIES).map(([k,a]) => [k, {n:a.n, th:a.th, en:a.en.split(" · ")[1]}])), "species", species, setSpecies);
 (function buildList(){
@@ -2191,43 +2218,115 @@ function setView(k){
 document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => setView(b.dataset.view));
 
 /* ================= quiz ================= */
-const quiz = {on:false, target:null, tried:false, solved:false, right:0, asked:0, last:null, mode:"find", endAt:0, over:false};
+/* Each round asks every part of the current level once (and, at level 2, every slide type), in random order.
+   Before each question the model is switched to a configuration that shows that part.
+   Results go to the lecturer's Google Sheet through a Google Apps Script web app (SHEET_URL). */
+const SHEET_URL = "";   /* Google Apps Script Web App URL ending in /exec; empty = not connected yet */
+const APP_VER = "v16";
+const DEFAULT_CFG = {species:"grasshopper", sex:"female", wing:"tegmina", mouth:"chewing", pret:"arolium", ant:"filiform", leg:"jumping", pose:"hypognathous"};
+const NEED = {"subgenital-plate":{sex:"male"}, corium:{wing:"hemelytra"}, clavus:{wing:"hemelytra"},
+  "weevil-snout":{species:"weevil"}, scrobe:{species:"weevil"}, "antennal-club":{species:"weevil"}, ventrite:{species:"weevil"}, pygidium:{species:"weevil"},
+  "labial-mask":{mouth:"mask"}, "palpal-hook":{mouth:"mask"}, haltere:{wing:"haltere"}, fringe:{wing:"fringed"},
+  hamuli:{wing:"hamuli"}, frenulum:{wing:"frenulum"}, retinaculum:{wing:"frenulum"}, pulvillus:{pret:"pulvilli"}, empodium:{pret:"pulvilli"}};
+for (const k of ORDER.wing) if (/^(vein|cv)-/.test(k)) NEED[k] = {wing:"venation"};
+/* parts that sit inside or under something: spread the model out before asking */
+const EXPLODE_FOR = new Set(["hypopharynx","hindwing","glossa","paraglossa","hamuli","frenulum","retinaculum"]);
+const TYPEQ = {
+  ant:  {dict:ANT,        g:"head",  set:k => setAntType(k),   q:"หนวดบนโมเดลเป็นแบบใด"},
+  mouth:{dict:MOUTHTYPES, g:"mouth", set:k => setMouthType(k), q:"ปากบนโมเดลเป็นแบบใด"},
+  wing: {dict:WINGTYPES,  g:"wing",  set:k => setWingType(k),  q:"ปีกที่ไฮไลต์บนโมเดลเป็นแบบใด"},
+  leg:  {dict:LEGTYPES,   g:"leg",   set:k => setLegType(k),   q:"ขาที่ไฮไลต์บนโมเดลเป็นแบบใด"},
+  pose: {dict:HEADPOSE,   g:"head",  set:k => setHeadPose(k),  q:"หัวของแมลงบนโมเดลเป็นแบบใด"}
+};
+const typeOk = (attr, k) => attr === "pose" || !!TYPEQ[attr].dict[k].ref;
+function applyCfg(c){
+  c = Object.assign({}, DEFAULT_CFG, c || {});
+  if (species !== c.species) setSpecies(c.species);
+  if (c.species !== "grasshopper") return;
+  if (sex !== c.sex) setSex(c.sex);
+  if (wingType !== c.wing) setWingType(c.wing);
+  if (mouthType !== c.mouth) setMouthType(c.mouth);
+  if (pretType !== c.pret) setPretType(c.pret);
+  if (antType !== c.ant) setAntType(c.ant);
+  if (legType !== c.leg) setLegType(c.leg);
+  if (headPose !== c.pose) setHeadPose(c.pose);
+}
+
+const quiz = {on:false, qs:[], i:-1, cur:null, tried:false, solved:false, right:0, asked:0, mode:"find", endAt:0, over:false,
+  attemptId:"", startedAt:0, cfgDirty:false};
 const qTh = document.getElementById("qTh"), qEn = document.getElementById("qEn"), qFb = document.getElementById("qFb");
 const qLang = document.getElementById("qLang"), qGroup = document.getElementById("qGroup");
 const qMode = document.getElementById("qMode"), qTime = document.getElementById("qTime"), qPrompt = document.getElementById("qPrompt");
 const qChoices = document.getElementById("qChoices"), qClock = document.getElementById("qClock"), qNextBtn = document.getElementById("qNext");
-function pool(){ return Object.keys(INFO).filter(k => byTag[k] && (qGroup.value === "all" || INFO[k].g === qGroup.value)); }
+const qGate = document.getElementById("qGate"), qBody = document.getElementById("qBody"), qIdIn = document.getElementById("qIdIn"), qIdFb = document.getElementById("qIdFb");
+const qProg = document.getElementById("qProg"), qBar = document.getElementById("qBar"), qResult = document.getElementById("qResult"), qWho = document.getElementById("qWho");
 function nameOf(k, lang){
   const inf = infoOf(k), en = inf.en.split(" — ")[0];
   return lang === "en" ? esc(en) : lang === "th" ? esc(inf.th) : esc(inf.th) + '<small>' + esc(en) + '</small>';
 }
+function typeName(attr, k, lang){
+  const a = TYPEQ[attr].dict[k], en = a.en.replace(/ type$/,"");
+  return lang === "en" ? esc(en) : lang === "th" ? esc(a.th) : esc(a.th) + '<small>' + esc(en) + '</small>';
+}
+function qLabel(q){ return q.kind === "type" ? TYPEQ[q.attr].dict[q.k].th + " (" + TYPEQ[q.attr].dict[q.k].en + ")" : infoOf(q.k).th + " (" + infoOf(q.k).en.split(" — ")[0] + ")"; }
 function shuffle(a){ for (let i=a.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function buildSet(){
+  const g = qGroup.value, qs = [];
+  for (const [gk, ks] of Object.entries(ORDER)) if (g === "all" || g === gk)
+    for (const k of ks) if (lvOf(k) === LEVEL) qs.push({kind:"part", k, g:gk});
+  if (LEVEL === 2) for (const [attr, T] of Object.entries(TYPEQ)) if (g === "all" || g === T.g)
+    for (const k of Object.keys(T.dict)) if (typeOk(attr, k)) qs.push({kind:"type", attr, k, g:T.g});
+  return shuffle(qs);
+}
+function addChoice(k, html, isRight){
+  const b = document.createElement("button"); b.type = "button"; b.className = "choice"; b.dataset.k = k;
+  if (isRight) b.dataset.right = "1";
+  b.innerHTML = html; b.onclick = () => chooseName(b);
+  qChoices.appendChild(b);
+}
+function showProgress(){
+  const n = quiz.qs.length, i = Math.min(quiz.i + 1, n);
+  qProg.textContent = "ข้อ " + i + " / " + n;
+  qBar.style.width = (n ? 100*quiz.asked/n : 0) + "%";
+}
 function nextQ(){
   if (quiz.over) return;
-  const p = pool().filter(k => k !== quiz.last);
-  quiz.target = p[Math.floor(Math.random()*p.length)]; quiz.last = quiz.target; quiz.tried = false; quiz.solved = false;
-  const inf = infoOf(quiz.target), lang = qLang.value;
-  qFb.textContent = ""; qFb.className = "feedback"; qChoices.innerHTML = "";
+  quiz.i++;
+  if (quiz.i >= quiz.qs.length) return finishRound("done");
+  const q = quiz.cur = quiz.qs[quiz.i], lang = qLang.value;
+  quiz.tried = false; quiz.solved = false; q.tries = 0; q.ok = false;
+  qFb.textContent = ""; qFb.className = "feedback"; qChoices.innerHTML = ""; qTh.textContent = ""; qEn.textContent = "";
+  showProgress();
+  if (q.kind === "type"){
+    const T = TYPEQ[q.attr];
+    applyCfg({[q.attr]: q.k}); quiz.cfgDirty = true;
+    if (explodeTarget > 0.5) setExplodeTarget(0);
+    qPrompt.textContent = T.q;
+    const others = shuffle(Object.keys(T.dict).filter(k => k !== q.k && typeOk(q.attr, k))).slice(0, 3);
+    for (const k of shuffle([q.k].concat(others))) addChoice(k, typeName(q.attr, k, lang), k === q.k);
+    return;
+  }
+  applyCfg(NEED[q.k]); quiz.cfgDirty = true;
+  if (EXPLODE_FOR.has(q.k) && explodeTarget < 0.5) setExplodeTarget(1);
+  if (!byTag[q.k]){ console.warn("quiz: no mesh for", q.k); quiz.qs.splice(quiz.i, 1); quiz.i--; return nextQ(); }
+  const inf = infoOf(q.k);
   if (quiz.mode === "find"){
     qPrompt.textContent = "คลิกที่ส่วนนี้บนโมเดล";
     qTh.textContent = lang === "en" ? inf.en.split(" — ")[0] : inf.th;
-    qEn.textContent = lang === "both" ? inf.en : "";
+    qEn.textContent = lang === "both" ? inf.en.split(" — ")[0] : "";
     select(null);
+    focusAt(HOME.target.clone(), camera.position.clone().sub(controls.target).normalize().multiplyScalar(HOME.pos.distanceTo(HOME.target)));
   } else {
-    qPrompt.textContent = "ส่วนที่ไฮไลต์บนโมเดลชื่ออะไร"; qTh.textContent = ""; qEn.textContent = "";
+    qPrompt.textContent = "ส่วนที่ไฮไลต์บนโมเดลชื่ออะไร";
     /* three distractors, preferably from the same body region, with distinct names */
-    const g = INFO[quiz.target].g, seen = new Set([infoOf(quiz.target).th]), opts = [quiz.target];
-    const all = Object.keys(INFO).filter(k => byTag[k] && k !== quiz.target);
-    for (const k of shuffle(all.filter(k => INFO[k].g === g)).concat(shuffle(all.filter(k => INFO[k].g !== g)))){
+    const seen = new Set([inf.th]), opts = [q.k];
+    const all = Object.keys(INFO).filter(k => byTag[k] && k !== q.k);
+    for (const k of shuffle(all.filter(k => INFO[k].g === q.g)).concat(shuffle(all.filter(k => INFO[k].g !== q.g)))){
       if (opts.length >= 4) break;
       const th = infoOf(k).th; if (seen.has(th)) continue; seen.add(th); opts.push(k);
     }
-    for (const k of shuffle(opts)){
-      const b = document.createElement("button"); b.type = "button"; b.className = "choice"; b.dataset.k = k;
-      b.innerHTML = nameOf(k, lang); b.onclick = () => chooseName(b);
-      qChoices.appendChild(b);
-    }
-    select(quiz.target);
+    for (const k of shuffle(opts)) addChoice(k, nameOf(k, lang), k === q.k);
+    select(q.k);
     if (anchorMesh){
       const w = new THREE.Vector3(); anchorMesh.getWorldPosition(w);
       const dir = camera.position.clone().sub(controls.target).normalize();
@@ -2242,16 +2341,19 @@ function score(){
 }
 let qTimer = null, qClockTimer = null;
 function markRight(){
-  if (!quiz.tried){ quiz.right++; quiz.asked++; }
-  quiz.tried = true; quiz.solved = true; score();
+  const q = quiz.cur;
+  q.tries++;
+  if (!quiz.tried){ quiz.right++; quiz.asked++; q.ok = true; }
+  quiz.tried = true; quiz.solved = true; score(); showProgress();
   qFb.textContent = "ถูกต้อง"; qFb.className = "feedback ok";
   clearTimeout(qTimer); qTimer = setTimeout(nextQ, quiz.endAt ? 700 : 1300);
 }
-function markWrong(){ if (!quiz.tried){ quiz.asked++; quiz.tried = true; score(); } }
+function markWrong(){ quiz.cur.tries++; if (!quiz.tried){ quiz.asked++; quiz.tried = true; score(); showProgress(); } }
 function quizAnswer(m){
-  if (!m || !quiz.target || quiz.over || quiz.mode !== "find" || quiz.solved) return;
+  const q = quiz.cur;
+  if (!m || !q || q.kind !== "part" || quiz.over || quiz.mode !== "find" || quiz.solved) return;
   const tags = m.userData.tags;
-  if (tags.includes(quiz.target)){ select(quiz.target, m); markRight(); }
+  if (tags.includes(q.k)){ select(q.k, m); markRight(); }
   else {
     markWrong();
     const inf = infoOf(tags[0]);
@@ -2259,48 +2361,122 @@ function quizAnswer(m){
   }
 }
 function chooseName(b){
-  if (quiz.over || quiz.solved) return;
-  if (b.dataset.k === quiz.target || infoOf(b.dataset.k).th === infoOf(quiz.target).th){
-    b.classList.add("ok"); qChoices.querySelectorAll(".choice").forEach(x => x.disabled = true); markRight();
-  } else {
-    markWrong(); b.classList.add("bad"); b.disabled = true;
-    qFb.textContent = "ยังไม่ใช่ ลองอีกครั้ง"; qFb.className = "feedback bad";
-  }
+  if (quiz.over || quiz.solved || !quiz.cur) return;
+  const q = quiz.cur;
+  const right = b.dataset.right === "1" || (q.kind === "part" && infoOf(b.dataset.k).th === infoOf(q.k).th);
+  if (right){ b.classList.add("ok"); qChoices.querySelectorAll(".choice").forEach(x => x.disabled = true); markRight(); }
+  else { markWrong(); b.classList.add("bad"); b.disabled = true; qFb.textContent = "ยังไม่ใช่ ลองอีกครั้ง"; qFb.className = "feedback bad"; }
 }
 function revealAnswer(){
-  if (quiz.over || !quiz.target) return;
+  const q = quiz.cur;
+  if (quiz.over || !q || quiz.solved) return;
   markWrong(); quiz.solved = true;
-  if (quiz.mode === "name"){
-    qChoices.querySelectorAll(".choice").forEach(x => { x.disabled = true; if (x.dataset.k === quiz.target) x.classList.add("ok"); });
-    qFb.textContent = "คำตอบคือ " + infoOf(quiz.target).th; qFb.className = "feedback";
-  } else { select(quiz.target); qFb.textContent = "ส่วนที่ไฮไลต์คือคำตอบ"; qFb.className = "feedback"; }
+  if (qChoices.children.length){
+    qChoices.querySelectorAll(".choice").forEach(x => { x.disabled = true; if (x.dataset.right === "1") x.classList.add("ok"); });
+    qFb.textContent = "คำตอบคือ " + (q.kind === "type" ? TYPEQ[q.attr].dict[q.k].th : infoOf(q.k).th); qFb.className = "feedback";
+  } else { select(q.k); qFb.textContent = "ส่วนที่ไฮไลต์คือคำตอบ"; qFb.className = "feedback"; }
+}
+function skipQ(){
+  if (quiz.over) return startRound();
+  clearTimeout(qTimer);
+  if (quiz.cur && !quiz.solved && !quiz.tried){ quiz.asked++; quiz.tried = true; score(); }
+  nextQ();
 }
 function tickClock(){
   if (!quiz.endAt) return;
   const left = Math.max(0, Math.ceil((quiz.endAt - performance.now())/1000));
   qClock.textContent = "เหลือ " + Math.floor(left/60) + ":" + String(left%60).padStart(2, "0");
   qClock.classList.toggle("low", left <= 10);
-  if (left === 0 && !quiz.over){
-    quiz.over = true; clearTimeout(qTimer); clearInterval(qClockTimer); select(null);
-    qPrompt.textContent = "หมดเวลา"; qChoices.innerHTML = "";
-    qTh.textContent = "ถูก " + quiz.right + " จาก " + quiz.asked + " ข้อ";
-    qEn.textContent = quiz.asked ? "ถูกในครั้งแรกร้อยละ " + Math.round(100*quiz.right/quiz.asked) : "";
-    qFb.textContent = "กด “เริ่มใหม่” เพื่อเล่นอีกรอบ"; qFb.className = "feedback";
-    qNextBtn.textContent = "เริ่มใหม่";
-  }
+  if (left === 0 && !quiz.over) finishRound("time");
+}
+function finishRound(reason){
+  quiz.over = true; clearTimeout(qTimer); clearInterval(qClockTimer); select(null);
+  const n = quiz.qs.length, pct = n ? Math.round(100*quiz.right/n) : 0;
+  const wrong = quiz.qs.filter(q => !q.ok).map(qLabel);
+  qPrompt.textContent = reason === "time" ? "หมดเวลา" : "ทำครบทุกข้อแล้ว"; qChoices.innerHTML = "";
+  qTh.textContent = "ถูกในครั้งแรก " + quiz.right + " จาก " + n + " ข้อ";
+  qEn.textContent = "คิดเป็นร้อยละ " + pct + (reason === "time" ? " (ทำไป " + quiz.asked + " ข้อ)" : "");
+  qFb.textContent = ""; qFb.className = "feedback";
+  qBar.style.width = "100%"; qNextBtn.textContent = "เริ่มชุดใหม่";
+  qResult.hidden = false;
+  qResult.innerHTML = '<div class="sendst" id="qSend">กำลังบันทึกคะแนน…</div>' +
+    (wrong.length ? '<p class="note"><b>ควรทบทวน</b> ' + esc(wrong.join(", ")) + '</p>' : '<p class="note">ตอบถูกในครั้งแรกทุกข้อ</p>');
+  const payload = Object.assign(roundInfo(), {event:"finish", reason, answered:quiz.asked, right:quiz.right, pct,
+    durationSec:Math.round((Date.now() - quiz.startedAt)/1000), wrong,
+    answers:quiz.qs.map((q, i) => ({n:i+1, kind:q.kind, key:q.kind === "type" ? q.attr + ":" + q.k : q.k, name:qLabel(q), ok:!!q.ok, tries:q.tries || 0}))});
+  send(payload, st => { const el = document.getElementById("qSend"); if (el) el.innerHTML = st; });
+}
+function roundInfo(){
+  return {attemptId:quiz.attemptId, studentId:getId(), level:LEVEL, group:qGroup.value, mode:quiz.mode,
+    timeLimit:+qTime.value, total:quiz.qs.length, ver:APP_VER, clientTime:new Date().toISOString()};
 }
 function startRound(){
   clearTimeout(qTimer); clearInterval(qClockTimer);
-  quiz.mode = qMode.value; quiz.over = false; quiz.right = 0; quiz.asked = 0; score();
+  if (!getId()){ showGate(true); return; }
+  showGate(false);
+  quiz.mode = qMode.value; quiz.over = false; quiz.right = 0; quiz.asked = 0; quiz.i = -1; quiz.cur = null; score();
+  quiz.qs = buildSet(); quiz.startedAt = Date.now();
+  quiz.attemptId = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
+  qResult.hidden = true; qResult.innerHTML = "";
   const secs = +qTime.value; quiz.endAt = secs ? performance.now() + secs*1000 : 0;
-  qClock.hidden = !secs; qNextBtn.textContent = "ข้อถัดไป";
+  qClock.hidden = !secs; qNextBtn.textContent = "ข้าม / ข้อถัดไป";
   if (secs){ tickClock(); qClockTimer = setInterval(tickClock, 250); }
+  send(Object.assign(roundInfo(), {event:"start"}), null);
   nextQ();
 }
 document.getElementById("qHint").onclick = revealAnswer;
-qNextBtn.onclick = () => { clearTimeout(qTimer); if (quiz.over) startRound(); else nextQ(); };
-qLang.onchange = qGroup.onchange = () => { clearTimeout(qTimer); quiz.over ? startRound() : nextQ(); };
-qMode.onchange = qTime.onchange = startRound;
+qNextBtn.onclick = skipQ;
+qLang.onchange = () => { if (quiz.cur && !quiz.over){ quiz.i--; nextQ(); } };
+qMode.onchange = qTime.onchange = qGroup.onchange = startRound;
+
+/* ---- student ID (10 digits) ---- */
+const ID_KEY = "morph3d-sid";
+function getId(){ try { return sessionStorage.getItem(ID_KEY) || ""; } catch (e) { return quiz.sid || ""; } }
+function setId(v){ quiz.sid = v; try { v ? sessionStorage.setItem(ID_KEY, v) : sessionStorage.removeItem(ID_KEY); } catch (e) {} }
+function showGate(on){
+  qGate.hidden = !on; qBody.hidden = on;
+  if (on){ quiz.cur = null; select(null); qIdIn.value = ""; qIdFb.textContent = ""; setTimeout(() => qIdIn.focus(), 0); }
+  qWho.textContent = getId() ? "รหัสนักศึกษา " + getId() : "";
+}
+function submitId(){
+  const v = qIdIn.value.replace(/[\s-]/g, "");
+  if (!/^\d{10}$/.test(v)){
+    qIdFb.textContent = /\D/.test(v) ? "รหัสนักศึกษาต้องเป็นตัวเลขเท่านั้น" : "กรอกรหัสนักศึกษาให้ครบ 10 หลัก (ตอนนี้มี " + v.length + " หลัก)";
+    qIdFb.className = "feedback bad"; return;
+  }
+  setId(v); startRound();
+}
+document.getElementById("qIdGo").onclick = submitId;
+qIdIn.addEventListener("keydown", e => { if (e.key === "Enter") submitId(); });
+document.getElementById("qChangeId").onclick = () => { setId(""); clearTimeout(qTimer); clearInterval(qClockTimer); showGate(true); };
+
+/* ---- sending to Google Sheets, with a retry queue kept in this browser ---- */
+const Q_KEY = "morph3d-queue";
+function loadQ(){ try { return JSON.parse(localStorage.getItem(Q_KEY) || "[]"); } catch (e) { return []; } }
+function saveQ(a){ try { localStorage.setItem(Q_KEY, JSON.stringify(a.slice(-50))); } catch (e) {} }
+function post(p){
+  return fetch(SHEET_URL, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify(p)})
+    .then(r => r.json()).then(j => { if (!j || !j.ok) throw new Error((j && j.error) || "bad reply"); return j; });
+}
+function send(p, report){
+  if (!SHEET_URL){ if (report) report('<span class="warn">ยังไม่ได้เชื่อม Google Sheet คะแนนรอบนี้จึงยังไม่ถูกบันทึก</span>'); return; }
+  post(p).then(j => {
+    if (p.event === "start" && j.known === false) qWho.innerHTML = esc("รหัสนักศึกษา " + getId()) + ' <span class="warn">ไม่พบรหัสนี้ในรายชื่อวิชา ตรวจรหัสอีกครั้ง</span>';
+    if (report) report('<span class="okc">บันทึกคะแนนแล้ว</span> · ' + esc(new Date(j.time || Date.now()).toLocaleString("th-TH")));
+    flushQ();
+  }).catch(() => {
+    const a = loadQ(); a.push(p); saveQ(a);
+    if (report) report('<span class="warn">ยังส่งคะแนนไม่ได้ (อินเทอร์เน็ตขัดข้อง) ระบบจะส่งให้อีกครั้งเมื่อเปิดหน้านี้ครั้งถัดไป</span>');
+  });
+}
+let flushing = false;
+function flushQ(){
+  if (flushing || !SHEET_URL) return;
+  const a = loadQ(); if (!a.length) return;
+  flushing = true;
+  (async () => { const left = []; for (const p of a){ try { await post(p); } catch (e) { left.push(p); } } saveQ(left); flushing = false; })();
+}
+flushQ();
 
 /* ================= identification key to orders (adult, winged) ================= */
 const KEY = {
@@ -2415,7 +2591,7 @@ function setTab(t){
   document.getElementById("explore").hidden = t !== "explore"; document.getElementById("quiz").hidden = !q; document.getElementById("keyPane").hidden = t !== "key";
   tip.hidden = true;
   if (q) startRound();
-  else { clearTimeout(qTimer); clearInterval(qClockTimer); quiz.endAt = 0; if (wasQuiz) select(null); }
+  else { clearTimeout(qTimer); clearInterval(qClockTimer); quiz.endAt = 0; if (wasQuiz){ select(null); if (quiz.cfgDirty){ quiz.cfgDirty = false; applyCfg({}); select(null); } } }
 }
 tabE.onclick = () => setTab("explore"); tabQ.onclick = () => setTab("quiz"); tabK.onclick = () => setTab("key");
 
@@ -2526,7 +2702,7 @@ function frame(now){
     box.getCenter(tmp); tmp.y = box.max.y;
     tmp.project(camera);
     if (tmp.z < 1){
-      const inf = infoOf(selKey), masked = quiz.on && quiz.mode === "name" && !quiz.solved;
+      const inf = infoOf(selKey), masked = quiz.on && quiz.cur && quiz.cur.kind === "part" && quiz.mode === "name" && !quiz.solved;
       tagTh.textContent = masked ? "?" : inf.th; tagEn.textContent = masked ? "ชิ้นนี้ชื่ออะไร" : inf.en.split(" — ")[0];
       tag3d.style.transform = "translate(" + ((tmp.x*0.5+0.5)*stage.clientWidth) + "px," + ((-tmp.y*0.5+0.5)*stage.clientHeight) + "px) translate(-50%,-100%)";
       tag3d.hidden = false;
