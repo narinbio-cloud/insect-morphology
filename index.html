@@ -28,7 +28,7 @@
   --stage-a:#1d2621; --stage-b:#0c110e; --glass:rgba(22,28,24,.86);
   --ok:#5fd39a; --bad:#ff8a7a; color-scheme:dark }
 
-html,body{height:100%}
+html,body{height:100%;margin:0}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6}
 button,input,select{font:inherit;color:inherit}
 .app{display:grid;grid-template-columns:minmax(0,1fr) 384px;height:100%}
@@ -139,7 +139,6 @@ button,input,select{font:inherit;color:inherit}
 .choice.ok{border-color:var(--ok);color:var(--ok);font-weight:600}
 .choice.bad{border-color:var(--bad);color:var(--bad);text-decoration:line-through}
 .choice:disabled{cursor:default}
-@media (max-width:420px){ .choices{grid-template-columns:1fr} }
 .feedback.ok{color:var(--ok)} .feedback.bad{color:var(--bad)}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .field{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
@@ -184,11 +183,45 @@ button,input,select{font:inherit;color:inherit}
 .landcard .pre{margin-top:auto;padding-top:8px;font-size:13px;color:var(--muted)}
 .landcard[aria-current="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 .land-foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
-@media (max-width: 860px){
-  .app{grid-template-columns:1fr;grid-template-rows:62svh auto;height:auto;min-height:100%}
-  .panel{border-left:0;border-top:1px solid var(--line);overflow:visible;padding-left:16px;padding-right:16px}
-  .controls{left:10px;right:10px;bottom:10px;gap:6px}
-  .brand{top:12px;left:12px}
+.sizebtn{display:none}
+/* Phones and tablets, portrait: the 3D stage stays fixed on top and only the panel scrolls,
+   so the model is always in view while reading or answering the quiz.
+   The control bar is one swipeable row; "ขยายโมเดล" toggles a taller stage. */
+@media (max-width: 860px) and (orientation: portrait){
+  html,body{height:100%;overflow:hidden}
+  .app{display:flex;flex-direction:column;height:100vh;height:100dvh}
+  .stage{flex:none;height:54vh;height:54dvh;transition:height .25s ease}
+  .app.big .stage{height:80vh;height:80dvh}
+  .panel{flex:1 1 auto;min-height:0;border-left:0;border-top:1px solid var(--line);overflow-y:auto;overscroll-behavior:contain;
+    padding:12px 16px 28px;gap:14px}
+  .brand{top:10px;left:12px;max-width:calc(100% - 24px)}
+  .brand .eyebrow,.brand h1{display:none}
+  .brand .sp{display:inline-block;font-size:11px;background:var(--glass);border:1px solid var(--line);border-radius:999px;padding:1px 9px}
+  .vtag{top:10px;right:12px}
+  .controls{left:8px;right:8px;bottom:8px;padding:6px;gap:6px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;
+    -webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent)}
+  .controls::-webkit-scrollbar{display:none}
+  .controls > *{flex:none}
+  .controls .btn{padding:7px 11px}
+  .slider{flex:none;width:96px;min-width:0}
+  .slider label,.views .vlabel{display:none}
+  .views{flex-wrap:nowrap}
+  .sizebtn{display:inline-block;order:-1}
+  .controls #explodeBtn{order:-2}
+  .controls .check{order:9;padding-right:24px}
+  .info h2{font-size:22px}
+  .quizcard{padding:12px}
+  .quizcard .target{font-size:24px}
+  .choices{grid-template-columns:1fr 1fr}
+  .choice{padding:9px 10px}
+}
+/* Phones turned sideways: model and panel side by side */
+@media (orientation: landscape) and (max-height: 520px){
+  .app{grid-template-columns:minmax(0,1fr) 300px;height:100vh;height:100dvh}
+  .panel{padding:10px 14px 20px;gap:12px}
+  .brand .eyebrow,.brand h1{display:none}
+  .controls{left:8px;right:8px;bottom:8px;padding:6px;gap:6px}
+  .slider label,.views .vlabel{display:none}
 }
 @media (prefers-reduced-motion: reduce){ .tag3d{transition:none} }
 </style>
@@ -209,6 +242,7 @@ button,input,select{font:inherit;color:inherit}
       <label class="check"><input type="checkbox" id="fade" checked> จางส่วนอื่น</label>
       <button class="btn" id="rotateBtn" type="button" aria-pressed="true">หยุดหมุน</button>
       <button class="btn" id="resetBtn" type="button">มุมมองเริ่มต้น</button>
+      <button class="btn sizebtn" id="sizeBtn" type="button" aria-pressed="false">ขยายโมเดล</button>
       <div class="views" role="group" aria-label="มุมมอง">
         <span class="vlabel">มุมมอง</span>
         <button class="btn sm" type="button" data-view="anterior" title="Anterior view">หน้า</button>
@@ -628,6 +662,7 @@ renderer.domElement.tabIndex = 0;
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
 const HOME = {pos:new THREE.Vector3(4.2, 2.8, 8.6), target:new THREE.Vector3(-0.6, -0.25, 0)};
+let camK = 1;   // camera distance factor, >1 on narrow screens (see resize)
 camera.position.copy(HOME.pos);
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.target.copy(HOME.target);
@@ -1936,6 +1971,11 @@ function closestMesh(key){
 function select(k, mesh){
   selKey = k; anchorMesh = k ? (mesh || closestMesh(k)) : null;
   refreshLook(); renderInfo();
+  /* the panel scrolls on its own (phones): bring the description back into view when a part is picked */
+  if (k && !document.getElementById("explore").hidden){
+    const pn = document.querySelector(".panel"), d = infoEl.getBoundingClientRect().top - pn.getBoundingClientRect().top;
+    if (d < 0 || d > pn.clientHeight*0.6) pn.scrollTo({top: pn.scrollTop + d - 8, behavior: reduceMotion ? "auto" : "smooth"});
+  }
   document.querySelectorAll(".part[data-k]").forEach(b => b.setAttribute("aria-pressed", b.dataset.k === k ? "true" : "false"));
 }
 function renderInfo(){
@@ -1983,7 +2023,7 @@ function legInfoHtml(){
 }
 let camTween = null;
 function focusAt(tgt, off){
-  const pos = tgt.clone().add(off.clone().multiplyScalar(1 + 0.45*explodeT));
+  const pos = tgt.clone().add(off.clone().multiplyScalar((1 + 0.45*explodeT)*camK));
   if (controls.target.distanceTo(tgt) < 0.6 && camera.position.distanceTo(pos) < 1.5) return;
   setRotate(false);
   camTween = {t: reduceMotion ? 1 : 0, ft:controls.target.clone(), fp:camera.position.clone(), tt:tgt, tp:pos};
@@ -2195,7 +2235,7 @@ setRotate(controls.autoRotate);
 rotateBtn.onclick = () => setRotate(!controls.autoRotate);
 document.getElementById("resetBtn").onclick = () => {
   controls.target.copy(HOME.target);
-  camera.position.copy(HOME.pos).sub(HOME.target).multiplyScalar(1 + 0.45*explodeT).add(HOME.target);
+  camera.position.copy(HOME.pos).sub(HOME.target).multiplyScalar((1 + 0.45*explodeT)*camK).add(HOME.target);
   controls.update();
 };
 
@@ -2216,13 +2256,18 @@ function setView(k){
   clearTimeout(vtagTimer); vtagTimer = setTimeout(() => { vtag.hidden = true; }, 2500);
 }
 document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => setView(b.dataset.view));
+const sizeBtn = document.getElementById("sizeBtn");
+sizeBtn.onclick = () => {
+  const big = document.querySelector(".app").classList.toggle("big");
+  sizeBtn.textContent = big ? "ย่อโมเดล" : "ขยายโมเดล"; sizeBtn.setAttribute("aria-pressed", big ? "true" : "false");
+};
 
 /* ================= quiz ================= */
 /* Each round asks every part of the current level once (and, at level 2, every slide type), in random order.
    Before each question the model is switched to a configuration that shows that part.
    Results go to the lecturer's Google Sheet through a Google Apps Script web app (SHEET_URL). */
 const SHEET_URL = "https://script.google.com/macros/s/AKfycbyA7eV6Qxe8G-sL1Tm8GUYTsrKC7bxHDYu-iSDolWFBj8dXe8PCKo-JzBDBH3IGcEgjNw/exec";   /* Google Apps Script Web App URL ending in /exec; empty = not connected yet */
-const APP_VER = "v17";
+const APP_VER = "v18";
 const DEFAULT_CFG = {species:"grasshopper", sex:"female", wing:"tegmina", mouth:"chewing", pret:"arolium", ant:"filiform", leg:"jumping", pose:"hypognathous"};
 const NEED = {"subgenital-plate":{sex:"male"}, corium:{wing:"hemelytra"}, clavus:{wing:"hemelytra"},
   "weevil-snout":{species:"weevil"}, scrobe:{species:"weevil"}, "antennal-club":{species:"weevil"}, ventrite:{species:"weevil"}, pygidium:{species:"weevil"},
@@ -2605,12 +2650,15 @@ function applyLevel(n){
   if (n < 3 && tabK.getAttribute("aria-selected") === "true") setTab("explore");
   if (n === 1 && species !== "grasshopper") setSpecies("grasshopper");
   /* put back any type that this level does not teach */
+  const tw0 = camTween;
   if (!okType(ANT, antType)) setAntType("filiform");
   if (!okType(MOUTHTYPES, mouthType)) setMouthType("chewing");
   if (!okType(WINGTYPES, wingType)) setWingType("tegmina");
   if (!okType(LEGTYPES, legType)) setLegType("jumping");
   if (n < 3 && pretType !== "arolium") setPretType("arolium");
   if (n < 2 && headPose !== "hypognathous") setHeadPose("hypognathous");
+  /* those setters zoom in on the part they change; a level change should show the whole insect instead */
+  if (camTween !== tw0){ camTween = tw0; focusAt(HOME.target.clone(), HOME.pos.clone().sub(HOME.target)); }
   for (const m of pickables){ m.userData.tags = lvTags(m.userData.allTags); m.visible = m.userData.tags.length > 0; }
   rebuildIndex(); hoverMesh = null;
   document.querySelectorAll(".part[data-k]").forEach(b => { b.hidden = lvOf(b.dataset.k) > n; });
@@ -2657,7 +2705,23 @@ function resize(){
   const w = stage.clientWidth, h = stage.clientHeight; if (!w || !h) return;
   renderer.setSize(w, h, false);
   camera.aspect = w/h;
-  camera.fov = camera.aspect >= 1.25 ? 35 : Math.min(70, 35*1.25/camera.aspect);
+  /* Wide stage: 35° vertical field of view. Narrow (phone, portrait) stage: open the view up to 50°
+     and pull the camera back so the whole insect fits across the width, like on a laptop screen. */
+  const narrow = camera.aspect < 1.25;
+  camera.fov = narrow ? Math.min(50, 35*1.25/camera.aspect) : 35;
+  const halfW = Math.tan(camera.fov*Math.PI/360)*camera.aspect;     // horizontal half-width per unit distance
+  const big = stage.parentElement.classList.contains("big");   // "ขยายโมเดล": keep the distance so the model really grows
+  const k = !narrow ? 1 : big ? camK : Math.max(1, 0.5/halfW);
+  if (Math.abs(k - camK) > 0.01){   // every camera move (focusAt, reset) is scaled by camK
+    const r = k/camK;
+    camera.position.sub(controls.target).multiplyScalar(r).add(controls.target);
+    if (camTween){   // a camera move already under way keeps its direction but ends at the new distance
+      camTween.fp.sub(camTween.ft).multiplyScalar(r).add(camTween.ft);
+      camTween.tp.sub(camTween.tt).multiplyScalar(r).add(camTween.tt);
+      if (camTween.q){ camTween.fl *= r; camTween.tl *= r; }
+    }
+    camK = k;
+  }
   camera.updateProjectionMatrix();
 }
 new ResizeObserver(resize).observe(stage); resize();
