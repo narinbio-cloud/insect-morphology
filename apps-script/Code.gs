@@ -82,6 +82,7 @@ function doPost(e) {
     const p = JSON.parse(e.postData.contents);
     const id = String(p.studentId || '').replace(/\D/g, '');
     if (!/^\d{10}$/.test(id)) return json({ok: false, error: 'studentId must be 10 digits'});
+    const sid = id.slice(0, 9) + '-' + id.slice(9);   // KKU format 691234567-8
     if (!p.attemptId || String(p.attemptId).length > 64) return json({ok: false, error: 'bad attemptId'});
     const ss = SpreadsheetApp.getActive();
     const att = ss.getSheetByName(ATT), ans = ss.getSheetByName(ANS);
@@ -92,7 +93,7 @@ function doPost(e) {
     const row = findRow(att, String(p.attemptId));
 
     if (p.event === 'start') {
-      if (!row) addRow(att, [now, String(p.attemptId), id, lvl, String(p.group || ''), String(p.mode || ''),
+      if (!row) addRow(att, [now, String(p.attemptId), sid, lvl, String(p.group || ''), String(p.mode || ''),
         Number(p.timeLimit) || 0, 'กำลังทำ', '', total, 0, 0, '', '', '', known === null ? '' : (known ? 'ใช่' : 'ไม่พบ'), String(p.ver || '')]);
       return json({ok: true, known: known, time: now.toISOString()});
     }
@@ -108,11 +109,11 @@ function doPost(e) {
       if (row) {
         att.getRange(row, 5, 1, values.length).setValues([values]);
       } else {
-        addRow(att, [now, String(p.attemptId), id, lvl].concat(values));
+        addRow(att, [now, String(p.attemptId), sid, lvl].concat(values));
       }
       if (answers.length) {
         ans.getRange(ans.getLastRow() + 1, 1, answers.length, ANS_HEAD.length).setValues(answers.map(a => [
-          now, String(p.attemptId), id, lvl, Number(a.n) || '', String(a.kind || ''), String(a.key || ''),
+          now, String(p.attemptId), sid, lvl, Number(a.n) || '', String(a.kind || ''), String(a.key || ''),
           String(a.name || ''), a.ok ? 1 : 0, Number(a.tries) || 0]));
       }
       return json({ok: true, known: known, time: now.toISOString(), right: right, pct: pct});

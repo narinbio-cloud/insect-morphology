@@ -282,9 +282,9 @@ button,input,select{font:inherit;color:inherit}
       <div class="quizcard" id="qGate" hidden>
         <div class="q">ก่อนเริ่มทำแบบทดสอบ</div>
         <label class="field idfield">รหัสนักศึกษา
-          <input id="qIdIn" type="text" inputmode="numeric" autocomplete="off" maxlength="14" placeholder="เช่น 6530401234">
+          <input id="qIdIn" type="text" inputmode="numeric" autocomplete="off" maxlength="14" placeholder="เช่น 691234567-8">
         </label>
-        <p class="idhelp">กรอกรหัสนักศึกษา<b>ให้ครบ 10 หลัก</b> เป็นตัวเลขเท่านั้น</p>
+        <p class="idhelp">กรอกรหัสนักศึกษา<b>ให้ครบ 10 หลัก</b> รูปแบบ <b>691234567-8</b> (พิมพ์ขีดหรือไม่พิมพ์ก็ได้)</p>
         <div class="feedback" id="qIdFb" aria-live="polite"></div>
         <button class="btn primary" id="qIdGo" type="button">เริ่มทำแบบทดสอบ</button>
         <p class="hint">ระบบจะบันทึกรหัสนักศึกษา ระดับ คะแนน ข้อที่ตอบผิด และวันเวลาที่ทำ ลงในไฟล์ของอาจารย์ผู้สอน เพื่อใช้ติดตามความก้าวหน้าในรายวิชานี้เท่านั้น</p>
@@ -2222,7 +2222,7 @@ document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => setView(
    Before each question the model is switched to a configuration that shows that part.
    Results go to the lecturer's Google Sheet through a Google Apps Script web app (SHEET_URL). */
 const SHEET_URL = "https://script.google.com/macros/s/AKfycbyA7eV6Qxe8G-sL1Tm8GUYTsrKC7bxHDYu-iSDolWFBj8dXe8PCKo-JzBDBH3IGcEgjNw/exec";   /* Google Apps Script Web App URL ending in /exec; empty = not connected yet */
-const APP_VER = "v16";
+const APP_VER = "v17";
 const DEFAULT_CFG = {species:"grasshopper", sex:"female", wing:"tegmina", mouth:"chewing", pret:"arolium", ant:"filiform", leg:"jumping", pose:"hypognathous"};
 const NEED = {"subgenital-plate":{sex:"male"}, corium:{wing:"hemelytra"}, clavus:{wing:"hemelytra"},
   "weevil-snout":{species:"weevil"}, scrobe:{species:"weevil"}, "antennal-club":{species:"weevil"}, ventrite:{species:"weevil"}, pygidium:{species:"weevil"},
@@ -2436,12 +2436,14 @@ function setId(v){ quiz.sid = v; try { v ? sessionStorage.setItem(ID_KEY, v) : s
 function showGate(on){
   qGate.hidden = !on; qBody.hidden = on;
   if (on){ quiz.cur = null; select(null); qIdIn.value = ""; qIdFb.textContent = ""; setTimeout(() => qIdIn.focus(), 0); }
-  qWho.textContent = getId() ? "รหัสนักศึกษา " + getId() : "";
+  qWho.textContent = getId() ? "รหัสนักศึกษา " + fmtId(getId()) : "";
 }
+/* 6912345678 -> 691234567-8 (KKU format: 9 digits, dash, check digit) */
+function fmtId(v){ return /^\d{10}$/.test(v) ? v.slice(0, 9) + "-" + v.slice(9) : v; }
 function submitId(){
   const v = qIdIn.value.replace(/[\s-]/g, "");
   if (!/^\d{10}$/.test(v)){
-    qIdFb.textContent = /\D/.test(v) ? "รหัสนักศึกษาต้องเป็นตัวเลขเท่านั้น" : "กรอกรหัสนักศึกษาให้ครบ 10 หลัก (ตอนนี้มี " + v.length + " หลัก)";
+    qIdFb.textContent = /\D/.test(v) ? "รหัสนักศึกษาต้องเป็นตัวเลขเท่านั้น" : "กรอกรหัสนักศึกษาให้ครบ 10 หลัก เช่น 691234567-8 (ตอนนี้มี " + v.length + " หลัก)";
     qIdFb.className = "feedback bad"; return;
   }
   setId(v); startRound();
@@ -2461,7 +2463,7 @@ function post(p){
 function send(p, report){
   if (!SHEET_URL){ if (report) report('<span class="warn">ยังไม่ได้เชื่อม Google Sheet คะแนนรอบนี้จึงยังไม่ถูกบันทึก</span>'); return; }
   post(p).then(j => {
-    if (p.event === "start" && j.known === false) qWho.innerHTML = esc("รหัสนักศึกษา " + getId()) + ' <span class="warn">ไม่พบรหัสนี้ในรายชื่อวิชา ตรวจรหัสอีกครั้ง</span>';
+    if (p.event === "start" && j.known === false) qWho.innerHTML = esc("รหัสนักศึกษา " + fmtId(getId())) + ' <span class="warn">ไม่พบรหัสนี้ในรายชื่อวิชา ตรวจรหัสอีกครั้ง</span>';
     if (report) report('<span class="okc">บันทึกคะแนนแล้ว</span> · ' + esc(new Date(j.time || Date.now()).toLocaleString("th-TH")));
     flushQ();
   }).catch(() => {
