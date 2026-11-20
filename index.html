@@ -3,6 +3,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Insect Morphology 3D</title>
+<meta name="author" content="รศ.ดร.นรินทร์ ชมภูพวง (Narin Chomphuphuang)">
+<meta name="copyright" content="© 2569 Narin Chomphuphuang, Khon Kaen University">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap">
@@ -182,6 +184,9 @@ button,input,select{font:inherit;color:inherit}
 .landcard .go{margin-top:auto;padding-top:8px;font-weight:600;color:var(--accent)}
 .landcard .pre{margin-top:auto;padding-top:8px;font-size:13px;color:var(--muted)}
 .landcard[aria-current="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.credit{margin-top:auto;padding-top:14px;border-top:1px solid var(--line);font-size:12px;line-height:1.55;color:var(--muted)}
+.credit p{margin:0 0 4px}
+.credit b{color:var(--ink);font-weight:600}
 .land-foot{margin-top:36px;padding-top:14px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
 .sizebtn{display:none}
 /* Phones and tablets, portrait: the 3D stage stays fixed on top and only the panel scrolls,
@@ -376,6 +381,11 @@ button,input,select{font:inherit;color:inherit}
       </div>
       <p class="hint">รูปวิธานนี้ย่อให้ง่าย ครอบคลุม 12 กลุ่มที่พบบ่อยในงานเกษตร ไม่รวมแมลงไม่มีปีกและบางอันดับ เช่น Ephemeroptera, Trichoptera และ Phasmatodea · เนื้อหาเสริม ไม่มีในสไลด์ชุดนี้</p>
     </div>
+    <footer class="credit">
+      <p><b>© 2569 รศ.ดร.นรินทร์ ชมภูพวง (Assoc. Prof. Dr. Narin Chomphuphuang) สงวนลิขสิทธิ์</b></p>
+      <p>ออกแบบและพัฒนาเพื่อการเรียนการสอนวิชา AG 002 203 แมลงและจุลินทรีย์ทางการเกษตร ภาควิชากีฏวิทยาและโรคพืช คณะเกษตรศาสตร์ มหาวิทยาลัยขอนแก่น</p>
+      <p>ใช้เพื่อการศึกษาได้ ห้ามคัดลอก ดัดแปลง หรือนำไปเผยแพร่ต่อในเชิงพาณิชย์โดยไม่ได้รับอนุญาต · โมเดลสามมิติแสดงด้วย three.js (MIT License)</p>
+    </footer>
   </aside>
 </div>
 
@@ -407,7 +417,7 @@ button,input,select{font:inherit;color:inherit}
         <span class="pre">แนะนำให้ผ่านระดับ 2 ก่อน</span>
       </button>
     </div>
-    <p class="land-foot">ภาควิชากีฏวิทยาและโรคพืช คณะเกษตรศาสตร์ มหาวิทยาลัยขอนแก่น · ใช้ได้ทั้งบนคอมพิวเตอร์และมือถือ</p>
+    <p class="land-foot">ภาควิชากีฏวิทยาและโรคพืช คณะเกษตรศาสตร์ มหาวิทยาลัยขอนแก่น · ใช้ได้ทั้งบนคอมพิวเตอร์และมือถือ<br>© 2569 รศ.ดร.นรินทร์ ชมภูพวง (Assoc. Prof. Dr. Narin Chomphuphuang) สงวนลิขสิทธิ์ · พัฒนาเพื่อการเรียนการสอน ห้ามนำไปเผยแพร่ต่อเชิงพาณิชย์โดยไม่ได้รับอนุญาต</p>
   </div>
 </div>
 
