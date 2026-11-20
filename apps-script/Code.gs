@@ -92,7 +92,7 @@ function doPost(e) {
     const row = findRow(att, String(p.attemptId));
 
     if (p.event === 'start') {
-      if (!row) att.appendRow([now, String(p.attemptId), id, lvl, String(p.group || ''), String(p.mode || ''),
+      if (!row) addRow(att, [now, String(p.attemptId), id, lvl, String(p.group || ''), String(p.mode || ''),
         Number(p.timeLimit) || 0, 'กำลังทำ', '', total, 0, 0, '', '', '', known === null ? '' : (known ? 'ใช่' : 'ไม่พบ'), String(p.ver || '')]);
       return json({ok: true, known: known, time: now.toISOString()});
     }
@@ -108,7 +108,7 @@ function doPost(e) {
       if (row) {
         att.getRange(row, 5, 1, values.length).setValues([values]);
       } else {
-        att.appendRow([now, String(p.attemptId), id, lvl].concat(values));
+        addRow(att, [now, String(p.attemptId), id, lvl].concat(values));
       }
       if (answers.length) {
         ans.getRange(ans.getLastRow() + 1, 1, answers.length, ANS_HEAD.length).setValues(answers.map(a => [
@@ -131,6 +131,11 @@ function inRoster(ss, id) {
   if (!sh || sh.getLastRow() < 2) return null;
   const ids = sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues().map(r => String(r[0]).replace(/\D/g, ''));
   return ids.indexOf(id) !== -1;
+}
+
+/* setValues keeps the text format of the ID column (appendRow turns 0123456789 into a number) */
+function addRow(sh, values) {
+  sh.getRange(sh.getLastRow() + 1, 1, 1, values.length).setValues([values]);
 }
 
 function findRow(sh, attemptId) {

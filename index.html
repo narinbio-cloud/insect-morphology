@@ -2221,7 +2221,7 @@ document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => setView(
 /* Each round asks every part of the current level once (and, at level 2, every slide type), in random order.
    Before each question the model is switched to a configuration that shows that part.
    Results go to the lecturer's Google Sheet through a Google Apps Script web app (SHEET_URL). */
-const SHEET_URL = "";   /* Google Apps Script Web App URL ending in /exec; empty = not connected yet */
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbyA7eV6Qxe8G-sL1Tm8GUYTsrKC7bxHDYu-iSDolWFBj8dXe8PCKo-JzBDBH3IGcEgjNw/exec";   /* Google Apps Script Web App URL ending in /exec; empty = not connected yet */
 const APP_VER = "v16";
 const DEFAULT_CFG = {species:"grasshopper", sex:"female", wing:"tegmina", mouth:"chewing", pret:"arolium", ant:"filiform", leg:"jumping", pose:"hypognathous"};
 const NEED = {"subgenital-plate":{sex:"male"}, corium:{wing:"hemelytra"}, clavus:{wing:"hemelytra"},
