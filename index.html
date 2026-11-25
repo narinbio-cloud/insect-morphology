@@ -769,9 +769,13 @@ reg(ell(0.62,0.82,0.56,"#4a7fd6",H), ["cranium"], headEx);
 for (const s of [1,-1]){
   reg(ell(0.2,0.32,0.13,"#1f2c55",H.clone().add(V(0.18,0.22,s*0.47)),{roughness:0.25,bumpScale:0.06}), ["compound-eye"], headEx.clone().add(V(0,0.2,s*0.9)));
 }
-const ocelli = [V(0.58,0.12,0), V(0.42,0.5,0.2), V(0.42,0.5,-0.2)];
+/* 3 dorsal ocelli of a grasshopper: one median ocellus on the frons between the antennae,
+   two lateral ocelli above and outside the antennal sockets (sockets at 0.5, 0.42, ±0.15) near the eye margin.
+   Each centre is put on the head-capsule surface so the ocellus bulges out above the head shells. */
+const onHead = v => { const e = Math.hypot(v.x/0.62, v.y/0.82, v.z/0.56); return v.clone().divideScalar(e); };
+const ocelli = [V(0.6,0.15,0), V(0.45,0.5,0.31), V(0.45,0.5,-0.31)].map(onHead);
 for (const o of ocelli){
-  reg(new THREE.Mesh(new THREE.SphereGeometry(0.055,16,12), makeMat("#f3d27a",{roughness:0.2,bumpMap:null})), ["ocellus"], headEx.clone().add(V(0.6,0.45,o.z*1.5))).position.copy(H.clone().add(o));
+  reg(new THREE.Mesh(new THREE.SphereGeometry(0.065,16,12), makeMat("#f3d27a",{roughness:0.2,bumpMap:null})), ["ocellus"], headEx.clone().add(V(0.6,0.45,o.z*1.5))).position.copy(H.clone().add(o));
 }
 // fix ocellus base positions (set after reg)
 movers.filter(m=>m.userData.tags[0]==="ocellus").forEach(m=>m.userData.basePos.copy(m.position));
